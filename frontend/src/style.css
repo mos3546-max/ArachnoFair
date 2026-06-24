@@ -1,0 +1,1002 @@
+/* ==========================================================================
+   ArachnoFair - サイバーパンク・テーマ CSS デザインシステム
+   ========================================================================== */
+
+:root {
+  /* カラーパレット定義 */
+  --bg-primary: #0a0b0e;
+  --bg-secondary: rgba(16, 18, 27, 0.85);
+  --bg-tertiary: rgba(26, 29, 43, 0.95);
+  
+  --color-cyan: #00f0ff;
+  --color-green: #39ff14;
+  --color-gold: #ffb700;
+  --color-pink: #ff0055;
+  --color-dark-gray: #1b1f2b;
+  
+  --text-main: #e2e8f0;
+  --text-muted: #718096;
+  
+  /* フォント指定 */
+  --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+  --font-display: 'Orbitron', 'Inter', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+  
+  /* エフェクト */
+  --glow-cyan: 0 0 10px rgba(0, 240, 255, 0.4), 0 0 20px rgba(0, 240, 255, 0.2);
+  --glow-green: 0 0 10px rgba(57, 255, 20, 0.4), 0 0 20px rgba(57, 255, 20, 0.2);
+  --glow-gold: 0 0 10px rgba(255, 183, 0, 0.4), 0 0 20px rgba(255, 183, 0, 0.2);
+  --glow-pink: 0 0 10px rgba(255, 0, 85, 0.4), 0 0 20px rgba(255, 0, 85, 0.2);
+  
+  --panel-border: 1px solid rgba(0, 240, 255, 0.15);
+  --panel-radius: 8px;
+}
+
+/* 全体のリセットと共通設定 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(0, 240, 255, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(255, 0, 85, 0.05) 0%, transparent 40%);
+}
+
+/* スクロールバーのカスタマイズ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-cyan);
+  border-radius: 3px;
+  box-shadow: var(--glow-cyan);
+}
+
+/* ==========================================================================
+   UI コンポーネント & ユーティリティ
+   ========================================================================== */
+
+/* ネオングローテキスト */
+.glow-text {
+  font-family: var(--font-display);
+  color: #fff;
+  text-shadow: 0 0 8px rgba(255,255,255,0.3), 0 0 15px var(--color-cyan);
+  letter-spacing: 2px;
+}
+
+.text-cyan { color: var(--color-cyan); text-shadow: 0 0 5px rgba(0,240,255,0.5); }
+.text-green { color: var(--color-green); text-shadow: 0 0 5px rgba(57,255,20,0.5); }
+.text-gold { color: var(--color-gold); text-shadow: 0 0 5px rgba(255,183,0,0.5); }
+.text-danger { color: var(--color-pink); text-shadow: 0 0 5px rgba(255,0,85,0.5); }
+
+/* ガラスモーフィック・パネル */
+.panel {
+  background: var(--bg-secondary);
+  border: var(--panel-border);
+  border-radius: var(--panel-radius);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.panel:hover {
+  border-color: rgba(0, 240, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(0, 240, 255, 0.05);
+}
+
+.panel-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-header h2 {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  color: var(--color-cyan);
+  letter-spacing: 1px;
+}
+
+.map-controls {
+  display: flex;
+  gap: 4px;
+}
+
+/* サイバーパンクボタン */
+.cyber-btn {
+  background: transparent;
+  border: 1px solid var(--color-cyan);
+  color: var(--color-cyan);
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: bold;
+  padding: 12px 24px;
+  cursor: pointer;
+  position: relative;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  transition: all 0.2s ease;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+
+.cyber-btn::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--color-cyan);
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.2s ease;
+}
+
+.cyber-btn:hover {
+  color: #000;
+  box-shadow: var(--glow-cyan);
+  text-shadow: none;
+}
+
+.cyber-btn:hover::after {
+  opacity: 1;
+}
+
+.cyber-btn.pulse-glow {
+  animation: pulse-glow-anim 2s infinite;
+}
+
+@keyframes pulse-glow-anim {
+  0% { box-shadow: 0 0 5px rgba(0, 240, 255, 0.2); }
+  50% { box-shadow: 0 0 15px rgba(0, 240, 255, 0.6); }
+  100% { box-shadow: 0 0 5px rgba(0, 240, 255, 0.2); }
+}
+
+.cyber-btn.success-glow {
+  border-color: var(--color-green);
+  color: var(--color-green);
+}
+.cyber-btn.success-glow::after {
+  background: var(--color-green);
+}
+.cyber-btn.success-glow:hover {
+  box-shadow: var(--glow-green);
+  color: #000;
+}
+
+.cyber-btn.warning-glow {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+}
+.cyber-btn.warning-glow::after {
+  background: var(--color-gold);
+}
+.cyber-btn.warning-glow:hover {
+  box-shadow: var(--glow-gold);
+  color: #000;
+}
+
+.cyber-btn-outline {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-main);
+  padding: 8px 16px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  transition: all 0.2s ease;
+}
+
+.cyber-btn-outline:hover {
+  border-color: var(--color-cyan);
+  color: var(--color-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.cyber-btn-outline.danger:hover {
+  border-color: var(--color-pink);
+  color: var(--color-pink);
+  box-shadow: var(--glow-pink);
+}
+
+.cyber-btn-outline.small {
+  padding: 4px 10px;
+  font-size: 0.7rem;
+}
+
+/* ==========================================================================
+   画面レイアウト構成
+   ========================================================================== */
+
+.game-container {
+  display: flex;
+  flex-direction: column;
+  width: 95vw;
+  max-width: 1400px;
+  height: 92vh;
+  gap: 16px;
+}
+
+/* ヘッダー */
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid var(--color-cyan);
+  padding-bottom: 8px;
+  box-shadow: 0 4px 12px rgba(0,240,255,0.05);
+}
+
+.game-header .logo h1 {
+  font-size: 1.6rem;
+  font-weight: 900;
+}
+
+.game-header .logo .version {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-weight: normal;
+}
+
+.game-info {
+  display: flex;
+  gap: 24px;
+}
+
+.info-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.info-block .label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+}
+
+.info-block .value {
+  font-family: var(--font-display);
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+/* メインレイアウト */
+.game-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+  flex: 1;
+  min-height: 0; /* スクロール破綻防止 */
+}
+
+/* 蜘蛛の巣マップパネル */
+.map-panel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.map-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  padding: 10px;
+  position: relative;
+}
+
+#spider-map {
+  width: 100%;
+  height: 100%;
+  max-height: 480px;
+  max-width: 480px;
+}
+
+/* SVGマップ内要素のスタイリング */
+.map-link {
+  stroke: rgba(0, 240, 255, 0.25);
+  stroke-width: 2px;
+  stroke-dasharray: 4, 4;
+}
+
+.map-link.radial {
+  stroke: rgba(0, 240, 255, 0.4);
+  stroke-dasharray: 0;
+}
+
+.map-node {
+  stroke-width: 2px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.map-node:hover {
+  r: 14px;
+  filter: drop-shadow(0 0 8px currentColor);
+}
+
+/* マス色定義 */
+.node-treasury { fill: #000; stroke: var(--color-gold); filter: drop-shadow(0 0 6px var(--color-gold)); }
+.node-item { fill: #1a1508; stroke: var(--color-gold); }
+.node-event { fill: #081a1a; stroke: var(--color-cyan); }
+.node-modifier { fill: #0d1a08; stroke: var(--color-green); }
+.node-trap { fill: #1a080d; stroke: var(--color-pink); }
+
+.node-highlight {
+  stroke: #fff !important;
+  stroke-width: 3px !important;
+  animation: node-pulse 1.5s infinite;
+}
+
+@keyframes node-pulse {
+  0% { filter: drop-shadow(0 0 2px #fff); }
+  50% { filter: drop-shadow(0 0 12px #fff); }
+  100% { filter: drop-shadow(0 0 2px #fff); }
+}
+
+/* プレイヤーマーカー */
+.player-marker {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 900;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.pm-player { fill: var(--color-green); filter: drop-shadow(0 0 4px var(--color-green)); }
+.pm-cpu1 { fill: var(--color-cyan); }
+.pm-cpu2 { fill: #9d00ff; }
+.pm-cpu3 { fill: #ff7700; }
+.pm-cpu4 { fill: #e100ff; }
+
+
+.node-text {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  fill: var(--text-muted);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+/* マップ凡例 */
+.map-legend {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid;
+}
+
+.legend-dot.item { background: #1a1508; border-color: var(--color-gold); }
+.legend-dot.event { background: #081a1a; border-color: var(--color-cyan); }
+.legend-dot.modifier { background: #0d1a08; border-color: var(--color-green); }
+.legend-dot.trap { background: #1a080d; border-color: var(--color-pink); }
+.legend-dot.treasury { background: #000; border-color: var(--color-gold); box-shadow: var(--glow-gold); }
+
+/* ダッシュボードパネル群 */
+.dashboard-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* ステータスセクション */
+.status-panel {
+  flex: none;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.flex-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.flex-row > div {
+  flex: 1;
+}
+
+.status-item .label {
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  display: block;
+}
+
+/* HPゲージ */
+.hp-bar-container {
+  height: 20px;
+  background: var(--color-dark-gray);
+  border: 1px solid rgba(255, 0, 85, 0.2);
+  position: relative;
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+}
+
+.hp-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ff0055 0%, #ff5e00 100%);
+  box-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
+  transition: width 0.5s ease-in-out;
+}
+
+.bar-text {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+/* 金糸強調表示 (ドミニオン風) */
+.thread-display-container {
+  display: inline-block;
+  border: 2px solid var(--color-gold);
+  padding: 4px 16px;
+  background: rgba(255, 183, 0, 0.05);
+  border-radius: 4px;
+  box-shadow: inset 0 0 8px rgba(255,183,0,0.1);
+  position: relative;
+}
+
+.glow-num {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--color-gold);
+  text-shadow: var(--glow-gold);
+}
+
+.badge-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
+.badge.item-collected {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+  background: rgba(255, 183, 0, 0.08);
+}
+
+.badge.empty {
+  color: var(--text-muted);
+}
+
+.hint-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hint-item {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-cyan);
+  background: rgba(0, 240, 255, 0.03);
+  padding: 6px 10px;
+  border-left: 2px solid var(--color-cyan);
+}
+
+.hint-empty {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* 操作パネル */
+.console-panel {
+  flex: none;
+}
+
+.console-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  min-height: 180px;
+}
+
+.ctrl-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.prompt-text {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+.btn-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+
+.mt-10 { margin-top: 10px; }
+
+/* 戦闘ステータス */
+.combat-status {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.combat-sums {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-top: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.02);
+}
+
+.sum-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 100px;
+}
+
+.sum-box .name {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.sum-box .score {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+.versus {
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: var(--color-pink);
+  font-size: 1rem;
+}
+
+/* バースト危険度に応じた形容詞バッジ */
+.safety-badge {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-weight: bold;
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
+.safety-badge.safety-safe { background: rgba(57, 255, 20, 0.2); color: var(--color-green); border: 1px solid var(--color-green); }
+.safety-badge.safety-warm { background: rgba(255, 183, 0, 0.2); color: var(--color-gold); border: 1px solid var(--color-gold); }
+.safety-badge.safety-hot { background: rgba(255, 94, 0, 0.2); color: #ff5e00; border: 1px solid #ff5e00; }
+.safety-badge.safety-critical { background: rgba(255, 0, 85, 0.2); color: var(--color-pink); border: 1px solid var(--color-pink); animation: pulse-danger 1s infinite; }
+
+@keyframes pulse-danger {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.card-hand {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* 戦闘用手札カード */
+.cyber-card {
+  width: 54px;
+  height: 80px;
+  background: var(--bg-tertiary);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.cyber-card:hover {
+  transform: translateY(-8px);
+  border-color: var(--color-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.cyber-card .value {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: var(--color-cyan);
+}
+
+.cyber-card .card-glow-bg {
+  font-size: 0.5rem;
+  color: var(--text-muted);
+}
+
+/* 宝物庫解錠UI */
+.treasury-status {
+  width: 100%;
+}
+
+.treasury-locks {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.lock-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255, 183, 0, 0.2);
+  border-radius: 4px;
+  padding: 8px;
+  position: relative;
+}
+
+.lock-slot .weight {
+  font-family: var(--font-display);
+  font-weight: bold;
+  color: var(--color-gold);
+}
+
+/* ドミニオン風: ( 投入数 ) 表示 */
+.slot-frame {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  margin: 8px 0;
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 2px 8px;
+  border-radius: 2px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.slot-btn {
+  width: 26px;
+  height: 26px;
+  background: var(--bg-tertiary);
+  border: 1px solid rgba(255, 183, 0, 0.3);
+  color: var(--color-gold);
+  cursor: pointer;
+  margin: 2px 0;
+  font-weight: bold;
+  border-radius: 2px;
+}
+
+.slot-btn:hover {
+  background: var(--color-gold);
+  color: #000;
+  box-shadow: var(--glow-gold);
+}
+
+.treasury-calc {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+  padding: 8px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  width: 100%;
+}
+
+/* ターミナル風ログセクション */
+.log-panel {
+  flex: 0.8;
+  min-height: 120px;
+  max-height: 200px;
+}
+
+.log-status {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--color-green);
+  border: 1px solid var(--color-green);
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.log-window {
+  flex: 1;
+  background: #050608;
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+  padding: 10px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: #a0aec0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-shadow: 0 0 1px rgba(0,0,0,0.5);
+}
+
+.log-line {
+  line-height: 1.4;
+  border-left: 2px solid rgba(255,255,255,0.1);
+  padding-left: 8px;
+  animation: log-fade-in 0.2s ease-out;
+}
+
+@keyframes log-fade-in {
+  from { opacity: 0; transform: translateX(-4px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.log-line.important { border-color: var(--color-pink); color: #fff; background: rgba(255,0,85,0.03); }
+.log-line.success { border-color: var(--color-green); color: var(--color-green); }
+.log-line.warning { border-color: var(--color-gold); color: var(--color-gold); }
+
+/* ==========================================================================
+   役職選択オーバーレイ画面
+   ========================================================================== */
+
+.overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(6, 8, 12, 0.95);
+  backdrop-filter: blur(15px);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+.overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.overlay-content {
+  background: var(--bg-secondary);
+  border: 2px solid var(--color-cyan);
+  box-shadow: 0 0 30px rgba(0,240,255,0.15);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 900px;
+  padding: 40px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.overlay-content h1 {
+  font-size: 2.8rem;
+  font-weight: 900;
+  margin-bottom: -10px;
+}
+
+.overlay-content .subtitle {
+  font-family: var(--font-mono);
+  color: var(--color-cyan);
+  font-size: 0.95rem;
+  letter-spacing: 3px;
+}
+
+.overlay-content h2 {
+  font-size: 1.1rem;
+  color: var(--text-main);
+  font-weight: normal;
+  margin-top: 10px;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: 100%;
+  margin: 16px 0;
+}
+
+/* トレジャーハンターと魔女などが綺麗に収まるように最後の2つは3列グリッドで調整 */
+@media (max-width: 768px) {
+  .role-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.role-card {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 16px;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.role-card:hover {
+  border-color: rgba(0, 240, 255, 0.5);
+  background: rgba(0, 240, 255, 0.02);
+  transform: translateY(-4px);
+}
+
+.role-card.selected {
+  border-color: var(--color-cyan);
+  background: rgba(0, 240, 255, 0.06);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+}
+
+.role-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.role-header h3 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: #fff;
+}
+
+.role-badge {
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-weight: bold;
+}
+
+.role-badge.speed { background: rgba(0,240,255,0.2); color: var(--color-cyan); }
+.role-badge.item { background: rgba(57,255,20,0.2); color: var(--color-green); }
+.role-badge.combat { background: rgba(255,0,85,0.2); color: var(--color-pink); }
+.role-badge.gold { background: rgba(255,183,0,0.2); color: var(--color-gold); }
+.role-badge.curse { background: rgba(157,0,255,0.2); color: #c084fc; }
+
+.role-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* 汎用非表示クラス */
+.hidden {
+  display: none !important;
+}
+
+/* ==========================================================================
+   ログテキストの色分け用スタイル定義
+   ========================================================================== */
+.log-p-name {
+  color: var(--color-green);
+  font-weight: bold;
+  text-shadow: 0 0 4px rgba(57, 255, 20, 0.4);
+}
+
+.log-c1-name {
+  color: var(--color-cyan);
+  font-weight: bold;
+  text-shadow: 0 0 4px rgba(0, 240, 255, 0.4);
+}
+
+.log-c2-name {
+  color: #c084fc;
+  font-weight: bold;
+  text-shadow: 0 0 4px rgba(192, 132, 252, 0.4);
+}
+
+.log-c3-name {
+  color: #ff7700;
+  font-weight: bold;
+  text-shadow: 0 0 4px rgba(255, 119, 0, 0.4);
+}
+
+.log-kw-gold {
+  color: var(--color-gold);
+  font-weight: bold;
+  text-shadow: 0 0 4px rgba(255, 183, 0, 0.4);
+}
+
+.log-kw-danger {
+  color: var(--color-pink);
+  font-weight: bold;
+  text-shadow: 0 0 4px rgba(255, 0, 85, 0.4);
+}
+
+.log-kw-damage {
+  color: #ff3b30;
+  font-weight: bold;
+}
+
+.log-kw-success {
+  color: var(--color-green);
+  font-weight: bold;
+}
+
+.log-kw-warning {
+  color: var(--color-gold);
+  font-weight: bold;
+}

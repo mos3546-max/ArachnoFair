@@ -1,0 +1,15 @@
+{
+  "name": "arachnofair-backend",
+  "version": "1.0.0",
+  "description": "ArachnoFair backend server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5"
+  }
+}

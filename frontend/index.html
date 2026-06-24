@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArachnoFair - アラクノフェア</title>
+  <!-- Google Fonts から近未来・サイバーパンク風のフォントを導入 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css">
+  <!-- Socket.io クライアント CDN -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body class="cyberpunk-theme">
+
+  <!-- 役職選択用オーバーレイ画面 (ゲームスタート時に表示) -->
+  <div id="role-select-overlay" class="overlay">
+    <div class="overlay-content">
+      <h1 class="glow-text">ARACHNOFAIR</h1>
+      <p class="subtitle">アラクノフェア - テキスト＆数理探索ゲーム</p>
+      <h2>探索を開始する前に、あなたの役職（ロール）を選択してください</h2>
+      
+      <div class="role-grid">
+        <div class="role-card selected" data-role="adventurer">
+          <div class="role-header">
+            <h3>冒険家</h3>
+            <span class="role-badge speed">移動: 高</span>
+          </div>
+          <p class="role-desc">探索特化。移動時の選択肢が常に1つ多く、アイテム発見率が非常に高い。</p>
+        </div>
+        
+        <div class="role-card" data-role="engineer">
+          <div class="role-header">
+            <h3>エンジニア</h3>
+            <span class="role-badge item">アイテム: 高</span>
+          </div>
+          <p class="role-desc">アイテム使用回数+1。罠マスのダメージおよび移動制限ペナルティを無効化する。</p>
+        </div>
+
+        <div class="role-card" data-role="treasure_hunter">
+          <div class="role-header">
+            <h3>トレジャーハンター</h3>
+            <span class="role-badge combat">戦闘: 極高</span>
+          </div>
+          <p class="role-desc">セットコレクションの補正倍率強化。戦闘時、初期値補正と戦闘勝利確率が極めて高い。</p>
+        </div>
+
+        <div class="role-card" data-role="tycoon">
+          <div class="role-header">
+            <h3>石油王</h3>
+            <span class="role-badge gold">資金: 高</span>
+          </div>
+          <p class="role-desc">強奪。他プレイヤーと同じマスに停止した際、資金や金糸を自動的に奪い取る。</p>
+        </div>
+
+        <div class="role-card" data-role="witch">
+          <div class="role-header">
+            <h3>魔女</h3>
+            <span class="role-badge curse">呪い: 高</span>
+          </div>
+          <p class="role-desc">呪術特化。同じマスに停止した相手の移動力を1に固定し、バースト上限を一時的に低下させる。</p>
+        </div>
+      </div>
+
+      <!-- プレイヤーネーム入力欄 -->
+      <div class="name-input-container" style="margin: 24px 0 12px 0; width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <label for="player-name-input" style="color: var(--color-cyan); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.5px; text-transform: uppercase;">エージェント・識別ネームを入力してください</label>
+        <input type="text" id="player-name-input" value="AGENT_ALPHA" style="width: 100%; padding: 10px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--color-cyan); border-radius: 4px; color: #fff; font-family: var(--font-mono); text-align: center; font-size: 1.1rem; text-shadow: var(--glow-cyan); outline: none; box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.1);">
+      </div>
+
+      <div style="display: flex; gap: 16px; margin-top: 16px; width: 100%; max-width: 440px; justify-content: center;">
+        <button id="start-game-btn" class="cyber-btn" style="flex: 1; padding: 10px 16px; font-size: 0.85rem;">シングルプレイ (CPU戦)</button>
+        <button id="match-online-btn" class="cyber-btn" style="flex: 1; border-color: var(--color-gold); color: var(--color-gold); text-shadow: var(--glow-gold); padding: 10px 16px; font-size: 0.85rem;">オンライン対戦 (マルチ)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- オートマッチング待機用オーバーレイ -->
+  <div id="matching-overlay" class="overlay hidden">
+    <div class="overlay-content" style="max-width: 500px; text-align: center;">
+      <h1 class="glow-text text-gold" style="font-size: 1.8rem; margin-bottom: 8px; letter-spacing: 2px;">MATCHMAKING</h1>
+      <p class="subtitle" style="margin-bottom: 24px; font-size: 0.85rem; color: var(--text-muted);">対戦ネットワークに接続中。全員が準備完了を押すとゲームが始まります。</p>
+      
+      <div class="matching-status-container" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 183, 0, 0.2); padding: 20px; border-radius: 6px; margin-bottom: 24px; box-shadow: inset 0 0 15px rgba(255,183,0,0.05);">
+        <div style="font-size: 1.3rem; font-family: var(--font-display); color: var(--color-gold); margin-bottom: 16px; text-shadow: var(--glow-gold);">
+          待機中: <span id="matching-count">0</span> / 5 人
+        </div>
+        <div id="matching-player-list" style="display: flex; flex-direction: column; gap: 8px; text-align: left; font-family: var(--font-mono); font-size: 0.9rem; max-height: 150px; overflow-y: auto; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); border-radius: 4px;">
+          <!-- 待機中のプレイヤー名が動的に追加されます -->
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 16px; width: 100%; justify-content: center;">
+        <button id="ready-matching-btn" class="cyber-btn success-glow" style="flex: 1; padding: 10px 16px; font-size: 0.85rem;">準備OK (Ready)</button>
+        <button id="cancel-matching-btn" class="cyber-btn-outline danger" style="flex: 1; padding: 10px 16px; font-size: 0.85rem;">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ゲームのメイン画面コンテナ -->
+  <div class="game-container">
+    
+    <!-- ヘッダーエリア -->
+    <header class="game-header">
+      <div class="logo">
+        <h1 class="glow-text">ARACHNOFAIR <span class="version">v1.2.0</span></h1>
+      </div>
+      <div class="game-info">
+        <div class="info-block">
+          <span class="label">TURN</span>
+          <span id="turn-count" class="value">1</span>
+        </div>
+        <div class="info-block">
+          <span class="label">PHASE</span>
+          <span id="current-phase" class="value text-cyan">LOADING</span>
+        </div>
+        <div class="info-block">
+          <span class="label">ACTIVE</span>
+          <span id="active-player" class="value text-green">-</span>
+        </div>
+      </div>
+      <button id="reset-game-btn" class="cyber-btn-outline small">システム再起動</button>
+    </header>
+
+    <!-- メインレイアウト (グリッド構造) -->
+    <main class="game-layout">
+      
+      <!-- 左列: マップ描画エリア -->
+      <section class="panel map-panel">
+        <div class="panel-header">
+          <h2>蜘蛛の巣トポロジー・グリッド</h2>
+          <div class="map-controls">
+            <button id="zoom-in-btn" class="cyber-btn-outline small" title="拡大">+</button>
+            <button id="zoom-out-btn" class="cyber-btn-outline small" title="縮小">-</button>
+            <button id="zoom-reset-btn" class="cyber-btn-outline small" title="リセット">100%</button>
+          </div>
+        </div>
+        <div class="map-container">
+          <!-- 蜘蛛の巣マップを動的描画するSVG -->
+          <svg id="spider-map" viewBox="-250 -250 500 500">
+            <!-- JSで動的に線や円、プレイヤーマーカーが描画されます -->
+          </svg>
+        </div>
+        <!-- マップ凡例 -->
+        <div class="map-legend">
+          <span class="legend-item"><span class="legend-dot item"></span>アイテム</span>
+          <span class="legend-item"><span class="legend-dot event"></span>イベント</span>
+          <span class="legend-item"><span class="legend-dot modifier"></span>移動補正</span>
+          <span class="legend-item"><span class="legend-dot trap"></span>罠マス</span>
+          <span class="legend-item"><span class="legend-dot treasury"></span>宝物庫</span>
+        </div>
+      </section>
+
+      <!-- 中列・右列: ステータス ＆ 操作コンソール -->
+      <section class="panel-group dashboard-panel">
+        
+        <!-- プレイヤーステータス -->
+        <div class="panel status-panel">
+          <div class="panel-header">
+            <h2>生体シグナル & リソース</h2>
+          </div>
+          <div class="status-grid">
+            <div class="status-item">
+              <span class="label">HP</span>
+              <div class="hp-bar-container">
+                <div id="player-hp-bar" class="hp-bar" style="width: 100%;"></div>
+                <span id="player-hp-text" class="bar-text">3000 / 3000</span>
+              </div>
+            </div>
+            <div class="status-item flex-row">
+              <div>
+                <span class="label">所持金糸 (蓄積)</span>
+                <!-- ドミニオン風強調表示 (枠の外に浮き出ているような強調表示) -->
+                <div class="thread-display-container">
+                  <span id="thread-count" class="value glow-num">0</span>
+                </div>
+              </div>
+              <div>
+                <span class="label">役職</span>
+                <span id="player-role-display" class="value text-cyan">-</span>
+              </div>
+            </div>
+            <div class="status-item">
+              <span class="label">獲得アイテム (セット効果狙い)</span>
+              <div id="item-list" class="badge-list">
+                <span class="badge empty">なし</span>
+              </div>
+            </div>
+            <div class="status-item">
+              <span class="label">入手した2進数ヒント (ON/OFF状態)</span>
+              <div id="hint-list" class="hint-list">
+                <span class="hint-empty">探索でヒントを見つけましょう...</span>
+              </div>
+            </div>
+            <div class="status-item" style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 12px; margin-top: 8px;">
+              <span class="label" style="color: var(--color-cyan); font-weight: bold; letter-spacing: 0.5px;">宝物庫アクセスセキュリティ解析</span>
+              <div id="treasury-security-status" class="value" style="font-size: 0.85rem; line-height: 1.4; margin-top: 6px; padding: 6px; background: rgba(0, 0, 0, 0.2); border-left: 2px solid var(--color-cyan); border-radius: 2px;">
+                スキャン中...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- アクション操作コンソール -->
+        <div class="panel console-panel">
+          <div class="panel-header animate-pulse">
+            <h2>オペレーション・コントロール</h2>
+          </div>
+          <div class="console-content">
+            
+            <!-- ダイスを振るフェーズ -->
+            <div id="ctrl-roll" class="ctrl-group hidden">
+              <p class="prompt-text">あなたのターンです。移動用のダイスをロールしてください。</p>
+              <button id="roll-dice-btn" class="cyber-btn pulse-glow">ダイスをロール</button>
+            </div>
+
+            <!-- 移動先選択フェーズ -->
+            <div id="ctrl-move" class="ctrl-group hidden">
+              <p class="prompt-text">移動可能なマスがハイライトされました。マップ上のマスをクリックするか、以下から選択してください。</p>
+              <div id="move-dest-list" class="btn-grid">
+                <!-- 移動先候補が動的に追加されます -->
+              </div>
+            </div>
+
+            <!-- イベント解決フェーズ (ターン終了待ち) -->
+            <div id="ctrl-resolve" class="ctrl-group hidden">
+              <p class="prompt-text">移動先でのイベントを解決しました。ターンを終了してライバルの行動へ移行します。</p>
+              <button id="end-turn-btn" class="cyber-btn success-glow">ターンを終了する</button>
+            </div>
+
+            <!-- バースト戦闘フェーズ -->
+            <div id="ctrl-combat" class="ctrl-group hidden">
+              <div class="combat-status">
+                <h3 class="glow-text text-danger">BATTLE IN PROGRESS</h3>
+                <div class="combat-sums">
+                  <div class="sum-box">
+                    <span class="name">プレイヤー</span>
+                    <span id="combat-player-sum" class="score">0</span>
+                    <span id="combat-player-safety" class="safety-badge">安全</span>
+                  </div>
+                  <div class="versus">VS</div>
+                  <div class="sum-box">
+                    <span id="combat-cpu-name" class="name">ライバル</span>
+                    <span id="combat-cpu-sum" class="score">0</span>
+                    <span id="combat-cpu-safety" class="safety-badge">安全</span>
+                  </div>
+                </div>
+              </div>
+              <p class="prompt-text">手札からカードを選択して出してください（累積が2000を超えるとバースト自滅）。</p>
+              <div id="combat-hand" class="card-hand">
+                <!-- 手札カードが動的に表示されます -->
+              </div>
+              <div class="combat-actions" style="display: flex; gap: 8px; justify-content: center; width: 100%;">
+                <button id="skip-combat-btn" class="cyber-btn success-glow small" style="padding: 6px 12px; font-size: 0.75rem;">スキップ（パス）</button>
+                <button id="flee-combat-btn" class="cyber-btn-outline danger small" style="padding: 6px 12px; font-size: 0.75rem;">逃走する (HP-300)</button>
+              </div>
+            </div>
+
+            <!-- 宝物庫解錠フェーズ -->
+            <div id="ctrl-treasury" class="ctrl-group hidden">
+              <div class="treasury-status">
+                <h3 class="glow-text text-gold">CENTRAL TREASURY LOCK</h3>
+                <p>宝物庫を解錠するため、4つのスロット「8・4・2・1」に蜘蛛の金糸を投入してください。</p>
+                <div class="treasury-locks">
+                  <!-- スロット 8 -->
+                  <div class="lock-slot" data-weight="8">
+                    <span class="weight">8</span>
+                    <div class="slot-frame">( <span class="slot-val">0</span> )</div>
+                    <button class="slot-btn plus" data-weight="8">+</button>
+                    <button class="slot-btn minus" data-weight="8">-</button>
+                  </div>
+                  <!-- スロット 4 -->
+                  <div class="lock-slot" data-weight="4">
+                    <span class="weight">4</span>
+                    <div class="slot-frame">( <span class="slot-val">0</span> )</div>
+                    <button class="slot-btn plus" data-weight="4">+</button>
+                    <button class="slot-btn minus" data-weight="4">-</button>
+                  </div>
+                  <!-- スロット 2 -->
+                  <div class="lock-slot" data-weight="2">
+                    <span class="weight">2</span>
+                    <div class="slot-frame">( <span class="slot-val">0</span> )</div>
+                    <button class="slot-btn plus" data-weight="2">+</button>
+                    <button class="slot-btn minus" data-weight="2">-</button>
+                  </div>
+                  <!-- スロット 1 -->
+                  <div class="lock-slot" data-weight="1">
+                    <span class="weight">1</span>
+                    <div class="slot-frame">( <span class="slot-val">0</span> )</div>
+                    <button class="slot-btn plus" data-weight="1">+</button>
+                    <button class="slot-btn minus" data-weight="1">-</button>
+                  </div>
+                </div>
+                <div class="treasury-calc">
+                  <span>入力値合計: <span id="slots-sum-display" class="glow-num">0</span></span>
+                  <span>使用金糸数: <span id="slots-cost-display">0</span> / <span id="player-threads-total">0</span></span>
+                </div>
+              </div>
+              <button id="unlock-treasury-btn" class="cyber-btn warning-glow">解錠を試みる</button>
+              <button id="treasury-cancel-btn" class="cyber-btn-outline small mt-10">一度戻る</button>
+            </div>
+
+            <!-- 戦闘報酬選択フェーズ -->
+            <div id="ctrl-combat-reward" class="ctrl-group hidden">
+              <h3 class="glow-text text-green">VICTORY REWARD</h3>
+              <p class="prompt-text">戦闘に勝利しました！略奪する報酬を選択してください。</p>
+              <div class="btn-grid">
+                <button id="claim-loot-btn" class="cyber-btn success-glow">アイテムを略奪する</button>
+                <button id="claim-destroy-btn" class="cyber-btn success-glow">手札を破壊する</button>
+              </div>
+            </div>
+
+            <!-- ゲームオーバーフェーズ -->
+            <div id="ctrl-gameover" class="ctrl-group hidden">
+              <h3 id="game-over-title" class="glow-text text-green">GAME OVER</h3>
+              <p id="game-over-desc" class="prompt-text">-</p>
+              <button id="play-again-btn" class="cyber-btn pulse-glow">もう一度プレイする</button>
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- 下段: ターミナルログコンソール -->
+    <footer class="panel log-panel">
+      <div class="panel-header">
+        <h2>ログ</h2>
+        <span class="log-status">ONLINE</span>
+      </div>
+      <div id="log-window" class="log-window">
+        <!-- JSでログ行が追加されます -->
+      </div>
+    </footer>
+
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
