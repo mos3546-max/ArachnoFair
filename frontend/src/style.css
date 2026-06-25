@@ -381,11 +381,24 @@ body {
 
 .node-text {
   font-family: var(--font-mono);
-  font-size: 8px;
-  fill: var(--text-muted);
+  font-size: 11px; /* 8px から 11px へ拡大 */
+  font-weight: bold; /* 太字にして可読性を向上 */
+  fill: #ffffff; /* 白に変更してコントラストを確保 */
   text-anchor: middle;
   dominant-baseline: central;
   pointer-events: none;
+  paint-order: stroke fill;
+  stroke: #000000; /* 黒の縁取りを追加 */
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+}
+
+/* 移動可能マスの数字強調 */
+.node-text.text-highlight {
+  fill: var(--color-gold); /* ゴールド色に変更 */
+  stroke: #000000;
+  stroke-width: 3px;
+  filter: drop-shadow(0 0 3px var(--color-gold)); /* ネオン発光 */
 }
 
 /* マップ凡例 */
@@ -878,12 +891,7 @@ body {
   margin: 16px 0;
 }
 
-/* トレジャーハンターと魔女などが綺麗に収まるように最後の2つは3列グリッドで調整 */
-@media (max-width: 768px) {
-  .role-grid {
-    grid-template-columns: 1fr;
-  }
-}
+/* レスポンシブ調整はファイル下部に統合 */
 
 .role-card {
   background: rgba(0, 0, 0, 0.4);
@@ -999,4 +1007,188 @@ body {
 .log-kw-warning {
   color: var(--color-gold);
   font-weight: bold;
+}
+
+/* ==========================================================================
+   レスポンシブデザイン (モバイル / タブレット / PC)
+   ========================================================================== */
+
+/* --------------------------------------------------
+   1. モバイル画面用 (max-width: 767px)
+   -------------------------------------------------- */
+@media (max-width: 767px) {
+  /* 全体コンテナの縦スクロール化 */
+  .game-container {
+    width: 95vw;
+    height: auto;
+    min-height: 100vh;
+    padding: 10px 0;
+    gap: 12px;
+  }
+
+  /* ヘッダーの縦並びコンパクト化 */
+  .game-header {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+    padding-bottom: 12px;
+  }
+
+  .game-info {
+    width: 100%;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .info-block .value {
+    font-size: 0.95rem;
+  }
+
+  /* メインレイアウト (縦並び) */
+  .game-layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* マップのスマホ調整 */
+  .map-panel {
+    align-items: center;
+  }
+
+  #spider-map {
+    max-height: 350px;
+    max-width: 350px;
+  }
+
+  /* ダッシュボードパネル (縦並び、画面全体スクロールに委ねる) */
+  .dashboard-panel {
+    overflow-y: visible;
+    padding-right: 0;
+  }
+
+  .flex-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .combat-sums {
+    gap: 8px;
+  }
+
+  .combat-sums .score {
+    font-size: 1.8rem;
+  }
+
+  /* ログウィンドウの縮小 */
+  .log-panel {
+    max-height: 150px;
+    min-height: 100px;
+  }
+
+  /* 役職選択（ホーム画面）のスマホ最適化 */
+  .overlay-content {
+    padding: 20px 15px;
+    gap: 16px;
+    max-height: 95vh;
+    overflow-y: auto;
+  }
+
+  .overlay-content h1 {
+    font-size: 2.2rem;
+  }
+
+  .role-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin: 10px 0;
+  }
+
+  .role-card {
+    padding: 12px;
+  }
+}
+
+/* --------------------------------------------------
+   2. タブレット画面用 (min-width: 768px) and (max-width: 1024px)
+   -------------------------------------------------- */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* 全体コンテナ */
+  .game-container {
+    width: 92vw;
+    height: auto;
+    min-height: 100vh;
+    padding: 16px 0;
+  }
+
+  /* メインレイアウト (マップ上部、ダッシュボード下部) */
+  .game-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .map-panel {
+    align-items: center;
+  }
+
+  #spider-map {
+    max-height: 480px;
+    max-width: 480px;
+  }
+
+  /* ダッシュボード (ステータスと操作コンソールを2列横並びにして空間効率アップ) */
+  .dashboard-panel {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 16px;
+    overflow-y: visible;
+  }
+
+  /* ログウィンドウ */
+  .log-panel {
+    max-height: 180px;
+  }
+
+  /* 役職選択画面 */
+  .overlay-content {
+    padding: 30px;
+    max-width: 720px;
+  }
+
+  .role-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+/* --------------------------------------------------
+   3. PC用画面用 (min-width: 1025px)
+   -------------------------------------------------- */
+@media (min-width: 1025px) {
+  /* PC用は基本グリッドスタイルを適用、役職選択カードを3列に並べる */
+  .role-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ==========================================================================
+   ルール説明書 (別ページ風オーバーレイ) の追加スタイル
+   ========================================================================== */
+.rules-page-content {
+  overflow: hidden !important; /* カード全体のスクロールを防ぎ、内部スクロールと固定フッターを実現 */
+}
+
+@media (max-width: 767px) {
+  .rules-page-content {
+    width: 95vw !important;
+    height: 85vh !important;
+    padding: 20px 15px 70px 15px !important; /* 下部にフッター固定用のパディング */
+  }
+
+  .rules-scroll-area {
+    margin-bottom: 0 !important; /* paddingで枠を確保するためマージン不要に */
+  }
+
+  .rules-footer-fixed {
+    padding: 10px 15px !important;
+  }
 }

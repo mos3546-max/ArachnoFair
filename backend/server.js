@@ -22,6 +22,9 @@ app.use(express.json());
 // rooms[roomId] = { id: roomId, players: [ { socketId, id, name, role } ], gameState: { ... } }
 const rooms = {};
 
+// カスタムルーム待機状態管理
+const customRooms = {};
+
 // マッチング待機キュー
 let waitingQueue = [];
 let matchingTimer = null;
@@ -73,6 +76,77 @@ function checkAndStartGame() {
     console.log('全員の準備が完了しました。ゲームを開始します。');
     createNewRoom();
   }
+}
+
+/**
+ * カスタムルームのプレイヤーから新ルームを作成してゲーム開始 (最大5人)
+ */
+function startCustomGame(roomName) {
+  const room = customRooms[roomName];
+  if (!room || room.length === 0) return;
+
+  const roomId = 'room_' + Math.random().toString(36).substr(2, 9);
+  const matchedPlayers = room.slice(0, Math.min(5, room.length)); // 最大5人
+  
+  // 5人初期状態を作成
+  const baseRole = matchedPlayers[0].role;
+  const gameState = game.createInitialState(baseRole);
+
+  const roomPlayers = [];
+  const assignedRoles = matchedPlayers.map(p => p.role);
+
+  // 人間プレイヤーの割り当て
+  matchedPlayers.forEach((p, idx) => {
+    const playerObj = gameState.players[idx];
+    playerObj.name = p.name;
+    playerObj.role = p.role;
+    playerObj.roleName = game.ROLES[p.role].name;
+    playerObj.isCpu = false;
+    playerObj.socketId = p.socketId;
+
+    roomPlayers.push({
+      socketId: p.socketId,
+      id: idx,
+      name: p.name,
+      role: p.role
+    });
+  });
+
+  // 不足分をCPUとして割り当て (5人構成)
+  const cpuRolesPool = Object.keys(game.ROLES).filter(r => !assignedRoles.includes(r));
+  for (let idx = matchedPlayers.length; idx < 5; idx++) {
+    const cpuRole = cpuRolesPool[idx - matchedPlayers.length] || 'adventurer';
+    const cpuObj = gameState.players[idx];
+    cpuObj.name = `ライバル ${String.fromCharCode(65 + (idx - matchedPlayers.length))} (CPU)`;
+    cpuObj.role = cpuRole;
+    cpuObj.roleName = game.ROLES[cpuRole].name;
+    cpuObj.isCpu = true;
+    cpuObj.socketId = null;
+  }
+
+  // 初期化完了ログ
+  gameState.logs = [`カスタムルーム「${roomName}」での対戦が開始されました！`];
+  addLog(gameState, `参加プレイヤー: ${matchedPlayers.map(p => `${p.name}(${game.ROLES[p.role].name})`).join(', ')}`);
+
+  rooms[roomId] = {
+    id: roomId,
+    players: roomPlayers,
+    gameState
+  };
+
+  // 各Socketへマッチング完了とアサインIDを通達
+  matchedPlayers.forEach((p, idx) => {
+    io.to(p.socketId).emit('match:success', {
+      roomId,
+      playerId: idx
+    });
+  });
+
+  // 新しいラウンドを開始
+  startNewRound(gameState);
+
+  // カスタムルームを消去
+  delete customRooms[roomName];
 }
 
 /**
@@ -183,6 +257,10 @@ function resolveNodeLanding(gameState, player, node) {
     if (targetN & 4) activeBits++;
     if (targetN & 2) activeBits++;
     if (targetN & 1) activeBits++;
+
+    if (player.role === 'tycoon') {
+      activeBits = 6;
+    }
 
     if (player.threads < activeBits) {
       // 蜘蛛の金糸が不足している場合、ランダムなマス（1〜33）に弾き飛ばされる
@@ -398,6 +476,10 @@ function checkTreasuryEntry(gameState, roomId) {
       if (targetN & 2) activeBits++;
       if (targetN & 1) activeBits++;
 
+      if (p.role === 'tycoon') {
+        activeBits = 6;
+      }
+
       if (p.threads >= activeBits) {
         candidates.push(p.id);
       }
@@ -486,8 +568,16 @@ function resolveCombatRound(gameState, roomId) {
 
     addLog(gameState, `ラウンド${cState.round}戦闘結果: ${attacker.name}は [${attackerCard}] を公開、${defender.name}は [${defenderCard}] を公開！`);
 
-    const attackerBurst = cState.attackerSum >= 2000;
-    const defenderBurst = cState.defenderSum >= 2000;
+    let attackerLimit = 2000;
+    if (attacker.role === 'witch') attackerLimit = 2500;
+    else if (attacker.role === 'tycoon') attackerLimit = 1800;
+
+    let defenderLimit = 2000;
+    if (defender.role === 'witch') defenderLimit = 2500;
+    else if (defender.role === 'tycoon') defenderLimit = 1800;
+
+    const attackerBurst = cState.attackerSum > attackerLimit;
+    const defenderBurst = cState.defenderSum > defenderLimit;
 
     if (cState.round >= 3 || attackerBurst || defenderBurst) {
       // 戦闘終了解決
@@ -676,6 +766,16 @@ function resolveRewardChoice(gameState, winner, loser, choice) {
     } else {
       transferCombatReward(gameState, winner, loser);
     }
+  } else if (choice === 'thread') {
+    if (loser.threads > 0) {
+      loser.threads -= 1;
+      winner.threads += 1;
+      addLog(gameState, `【金糸強奪】${winner.name} は ${loser.name} から蜘蛛の金糸を1本強奪しました！`);
+    } else {
+      loser.hp = Math.max(0, loser.hp - 300);
+      winner.hp = Math.min(3000, winner.hp + 200);
+      addLog(gameState, `【金糸強奪】${winner.name} は金糸を持たない ${loser.name} に打撃を与え、HPを奪いました！`);
+    }
   }
 }
 
@@ -763,6 +863,10 @@ function attemptCpuUnlock(gameState, cpu) {
   if (targetN & 4) { slotsToActivate['4'] = true; activeBits++; }
   if (targetN & 2) { slotsToActivate['2'] = true; activeBits++; }
   if (targetN & 1) { slotsToActivate['1'] = true; activeBits++; }
+
+  if (cpu.role === 'tycoon') {
+    activeBits = 6;
+  }
 
   if (cpu.threads >= activeBits) {
     // 消費して解錠
@@ -875,10 +979,109 @@ function runCpuTurnsAndProgress(roomId) {
 io.on('connection', (socket) => {
   console.log(`クライアント接続: ${socket.id}`);
 
+  // 1.1 カスタムルームへのジョイン
+  socket.on('custom-room:join', async ({ roomName, playerName, role }) => {
+    // 既存のオートマッチングキューや他のカスタムルームから離脱
+    waitingQueue = waitingQueue.filter(p => p.socketId !== socket.id);
+    broadcastQueueUpdate();
+    
+    // 他のカスタムルームから退出
+    for (const rName in customRooms) {
+      customRooms[rName] = customRooms[rName].filter(p => p.socketId !== socket.id);
+      io.to('lobby_' + rName).emit('custom-room:update', {
+        roomName: rName,
+        players: customRooms[rName].map(p => ({ name: p.name, role: p.role, ready: p.ready }))
+      });
+      if (customRooms[rName].length === 0) {
+        delete customRooms[rName];
+      }
+    }
+
+    if (!customRooms[roomName]) {
+      customRooms[roomName] = [];
+    }
+
+    if (customRooms[roomName].length >= 5) {
+      socket.emit('custom-room:error', { message: 'ルームが満員です (最大5人)' });
+      return;
+    }
+
+    customRooms[roomName].push({
+      socketId: socket.id,
+      name: playerName || '無名エージェント',
+      role: role || 'adventurer',
+      ready: false
+    });
+
+    await socket.join('lobby_' + roomName);
+    console.log(`カスタムルーム [${roomName}] に参加: ${playerName} (${role})`);
+    
+    io.to('lobby_' + roomName).emit('custom-room:update', {
+      roomName,
+      players: customRooms[roomName].map(p => ({ name: p.name, role: p.role, ready: p.ready }))
+    });
+  });
+
+  // 1.2 カスタムルームの準備状態変更
+  socket.on('custom-room:ready', ({ roomName, ready }) => {
+    const room = customRooms[roomName];
+    if (!room) return;
+
+    const player = room.find(p => p.socketId === socket.id);
+    if (player) {
+      player.ready = !!ready;
+      console.log(`カスタムルーム [${roomName}] 準備状態変更: ${player.name} -> ${player.ready ? 'READY' : 'NOT READY'}`);
+      
+      io.to('lobby_' + roomName).emit('custom-room:update', {
+        roomName,
+        players: room.map(p => ({ name: p.name, role: p.role, ready: p.ready }))
+      });
+    }
+  });
+
+  // 1.25 カスタムルーム対戦開始 (ホスト/プレイヤーによる開始ボタン押下)
+  socket.on('custom-room:start-match', ({ roomName }) => {
+    const room = customRooms[roomName];
+    if (room && room.length >= 1 && room.every(p => p.ready)) {
+      console.log(`カスタムルーム [${roomName}] の対戦を手動開始します。`);
+      startCustomGame(roomName);
+    }
+  });
+
+  // 1.3 カスタムルームからの離脱
+  socket.on('custom-room:leave', async ({ roomName }) => {
+    if (customRooms[roomName]) {
+      customRooms[roomName] = customRooms[roomName].filter(p => p.socketId !== socket.id);
+      await socket.leave('lobby_' + roomName);
+      console.log(`カスタムルーム [${roomName}] から退出: Socket ${socket.id}`);
+
+      io.to('lobby_' + roomName).emit('custom-room:update', {
+        roomName,
+        players: customRooms[roomName].map(p => ({ name: p.name, role: p.role, ready: p.ready }))
+      });
+
+      if (customRooms[roomName].length === 0) {
+        delete customRooms[roomName];
+      }
+    }
+  });
+
   // 1. オートマッチングキューに参加
   socket.on('queue:join', ({ playerName, role }) => {
     // 既存の接続があれば一度削除
     waitingQueue = waitingQueue.filter(p => p.socketId !== socket.id);
+
+    // 他のカスタムルームから退出（二重待機防止）
+    for (const rName in customRooms) {
+      customRooms[rName] = customRooms[rName].filter(p => p.socketId !== socket.id);
+      io.to('lobby_' + rName).emit('custom-room:update', {
+        roomName: rName,
+        players: customRooms[rName].map(p => ({ name: p.name, role: p.role, ready: p.ready }))
+      });
+      if (customRooms[rName].length === 0) {
+        delete customRooms[rName];
+      }
+    }
 
     waitingQueue.push({
       socketId: socket.id,
@@ -898,9 +1101,17 @@ io.on('connection', (socket) => {
       player.ready = !!ready;
       console.log(`準備状態変更: ${player.name} -> ${player.ready ? 'READY' : 'NOT READY'}`);
       broadcastQueueUpdate();
-      checkAndStartGame();
     } else {
       console.log(`[デバッグ警告] queue:ready を受信しましたが、ソケットID ${socket.id} が待機キューに見つかりません。現在のキュー:`, waitingQueue.map(p => p.socketId));
+    }
+  });
+
+  // 1.6 オートマッチング対戦開始 (プレイヤーによる開始ボタン押下)
+  socket.on('queue:start-match', () => {
+    const player = waitingQueue.find(p => p.socketId === socket.id);
+    if (player && waitingQueue.length >= 2 && waitingQueue.every(p => p.ready)) {
+      console.log('オートマッチング対戦を手動開始します。');
+      createNewRoom();
     }
   });
 
@@ -918,7 +1129,8 @@ io.on('connection', (socket) => {
       playerInQueue.ready = true;
       console.log(`即時開始/自動準備完了: ${playerInQueue.name}`);
       broadcastQueueUpdate();
-      checkAndStartGame();
+      // 即時開始時は、チェックなしで直接ルームを作成する
+      createNewRoom();
     }
   });
 
@@ -1108,6 +1320,10 @@ io.on('connection', (socket) => {
       if (slots['2']) { sum += 2; activeCount++; }
       if (slots['1']) { sum += 1; activeCount++; }
 
+      if (player.role === 'tycoon') {
+        activeCount = 6;
+      }
+
       if (player.threads < activeCount) return; // 金糸不足
 
       // 金糸の消費
@@ -1155,6 +1371,21 @@ io.on('connection', (socket) => {
     // マッチング待機キューから削除
     waitingQueue = waitingQueue.filter(p => p.socketId !== socket.id);
     broadcastQueueUpdate();
+
+    // カスタムルームから削除
+    for (const rName in customRooms) {
+      const originalLength = customRooms[rName].length;
+      customRooms[rName] = customRooms[rName].filter(p => p.socketId !== socket.id);
+      if (customRooms[rName].length !== originalLength) {
+        io.to('lobby_' + rName).emit('custom-room:update', {
+          roomName: rName,
+          players: customRooms[rName].map(p => ({ name: p.name, role: p.role, ready: p.ready }))
+        });
+        if (customRooms[rName].length === 0) {
+          delete customRooms[rName];
+        }
+      }
+    }
 
     // 進行中のゲームルームからの切断対応 (人間プレイヤーが抜けた場合、CPU化してゲームを自動進行させる)
     for (const roomId in rooms) {

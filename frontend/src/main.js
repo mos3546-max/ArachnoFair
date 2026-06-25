@@ -11,6 +11,8 @@ let socket = null;
 let myRoomId = null;
 let myPlayerId = null; // ルーム内でのプレイヤーインデックス (0〜4)
 let isReady = false;
+let customRoomName = null;
+let isInQueue = false; // 通常マッチングキュー待機中フラグ
 
 // ゲームのローカルステート
 let state = null;
@@ -126,6 +128,16 @@ function setupSocket() {
 
   // 待機キューの更新
   socket.on('queue:update', ({ count, players }) => {
+    // すでにゲーム中ならロビー更新は無視する
+    if (myRoomId) return;
+
+    // 自分がマッチング中でない場合は、遅れて届いたイベントなどで誤作動しないように隠し、ガードする
+    if (!isInQueue && !customRoomName) {
+      document.getElementById('matching-overlay').classList.add('hidden');
+      document.getElementById('role-select-overlay').classList.remove('hidden');
+      return;
+    }
+
     document.getElementById('matching-count').textContent = count;
     const listEl = document.getElementById('matching-player-list');
     listEl.innerHTML = '';
@@ -155,6 +167,17 @@ function setupSocket() {
         listEl.appendChild(item);
       });
     }
+
+    // 2名以上のプレイヤーがいて、かつ全員の準備が完了している場合にのみ対戦開始ボタンを表示
+    const startMatchBtn = document.getElementById('start-match-btn');
+    if (startMatchBtn) {
+      const allReady = (players.length >= 2 && players.every(p => p.ready));
+      if (allReady) {
+        startMatchBtn.classList.remove('hidden');
+      } else {
+        startMatchBtn.classList.add('hidden');
+      }
+    }
   });
 
   // マッチング成立
@@ -162,6 +185,7 @@ function setupSocket() {
     console.log(`マッチング成立！ RoomID: ${roomId}, PlayerID: ${playerId}`);
     myRoomId = roomId;
     myPlayerId = playerId;
+    isInQueue = false; // マッチ成立のためキュー状態終了
 
     // 準備完了状態をリセット
     resetReadyState();
@@ -182,12 +206,81 @@ function setupSocket() {
       btn.textContent = '準備OK (Ready)';
       btn.className = 'cyber-btn success-glow';
     }
+    const startMatchBtn = document.getElementById('start-match-btn');
+    if (startMatchBtn) {
+      startMatchBtn.classList.add('hidden');
+    }
   }
 
   // ゲーム状態の更新受信
   socket.on('game:state', (newState) => {
     state = newState;
     updateUI();
+  });
+
+  // カスタムルームの更新受信
+  socket.on('custom-room:update', ({ roomName, players }) => {
+    // すでにゲーム中ならロビー更新は無視する
+    if (myRoomId) return;
+
+    // 自分が退出済み（カスタムルーム名が不一致またはnull）ならガード
+    if (!customRoomName || customRoomName !== roomName) {
+      document.getElementById('matching-overlay').classList.add('hidden');
+      document.getElementById('role-select-overlay').classList.remove('hidden');
+      return;
+    }
+
+    customRoomName = roomName;
+    
+    const subtitle = document.querySelector('#matching-overlay .subtitle');
+    if (subtitle) {
+      subtitle.innerHTML = `合言葉 <span class="text-gold" style="font-weight:bold;">[ ${escapeHTML(roomName)} ]</span> のカスタムルームで待機中。全員が準備完了を押すとゲームが始まります。`;
+    }
+    
+    document.getElementById('matching-count').textContent = players.length;
+    const listEl = document.getElementById('matching-player-list');
+    listEl.innerHTML = '';
+
+    players.forEach(p => {
+      const item = document.createElement('div');
+      item.style.padding = '6px 0';
+      item.style.borderBottom = '1px solid rgba(255,255,255,0.02)';
+      item.style.display = 'flex';
+      item.style.justifyContent = 'space-between';
+      item.style.alignItems = 'center';
+
+      const readyBadge = p.ready 
+        ? `<span class="safety-badge safety-safe" style="font-size: 0.65rem; padding: 1px 4px; margin-top: 0;">READY</span>`
+         : `<span class="safety-badge safety-warm" style="font-size: 0.65rem; padding: 1px 4px; margin-top: 0;">準備中</span>`;
+
+      item.innerHTML = `
+        <div>
+          <span class="text-gold">> ${escapeHTML(p.name)}</span> 
+          <span style="font-size: 0.75rem; color: var(--text-muted);">(${getNodeRoleNameJa(p.role)})</span>
+        </div>
+        ${readyBadge}
+      `;
+      listEl.appendChild(item);
+    });
+
+    // 1名以上のプレイヤーがいて、かつ全員の準備が完了している場合にのみ対戦開始ボタンを表示
+    const startMatchBtn = document.getElementById('start-match-btn');
+    if (startMatchBtn) {
+      const allReady = (players.length >= 1 && players.every(p => p.ready));
+      if (allReady) {
+        startMatchBtn.classList.remove('hidden');
+      } else {
+        startMatchBtn.classList.add('hidden');
+      }
+    }
+  });
+
+  // カスタムルーム関連エラー
+  socket.on('custom-room:error', ({ message }) => {
+    alert(message);
+    document.getElementById('matching-overlay').classList.add('hidden');
+    customRoomName = null;
+    resetReadyState();
   });
 
   socket.on('disconnect', () => {
@@ -218,9 +311,15 @@ function setupEventListeners() {
   });
 
   // シングルプレイ (CPU戦) 開始ボタン
-  document.getElementById('start-game-btn').addEventListener('click', () => {
+  document.getElementById('start-game-btn').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     const nameInput = document.getElementById('player-name-input');
     const name = nameInput.value.trim() || '無名エージェント';
+    
+    isInQueue = true; // シングルプレイ時も内部的にはキュー経由で開始するため一時的にtrue
+    customRoomName = null;
     
     // シングルプレイ時は、キューにジョイン後即座に開始要求を送る
     socket.emit('queue:join', { playerName: name, role: selectedRole });
@@ -232,15 +331,34 @@ function setupEventListeners() {
   });
 
   // オンライン対戦 (マルチ) ボタン
-  document.getElementById('match-online-btn').addEventListener('click', () => {
+  document.getElementById('match-online-btn').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     const nameInput = document.getElementById('player-name-input');
     const name = nameInput.value.trim() || 'マルチ対戦者';
+
+    const roomInput = document.getElementById('room-name-input');
+    const roomName = roomInput.value.trim();
 
     // 待機オーバーレイを表示
     document.getElementById('matching-overlay').classList.remove('hidden');
 
-    // マッチングキューに入る
-    socket.emit('queue:join', { playerName: name, role: selectedRole });
+    if (roomName) {
+      // カスタムルームに入る
+      customRoomName = roomName;
+      isInQueue = false;
+      socket.emit('custom-room:join', { roomName, playerName: name, role: selectedRole });
+    } else {
+      // 通常のマッチングキューに入る
+      customRoomName = null;
+      isInQueue = true;
+      const subtitle = document.querySelector('#matching-overlay .subtitle');
+      if (subtitle) {
+        subtitle.textContent = '対戦ネットワークに接続中。全員が準備完了を押すとゲームが始まります。';
+      }
+      socket.emit('queue:join', { playerName: name, role: selectedRole });
+    }
   });
 
   // 準備完了 (Ready) ボタン
@@ -254,30 +372,99 @@ function setupEventListeners() {
       btn.textContent = '準備OK (Ready)';
       btn.className = 'cyber-btn success-glow';
     }
-    socket.emit('queue:ready', { ready: isReady });
+    
+    if (customRoomName) {
+      socket.emit('custom-room:ready', { roomName: customRoomName, ready: isReady });
+    } else {
+      socket.emit('queue:ready', { ready: isReady });
+    }
   });
 
-  // マッチングキャンセルボタン
-  document.getElementById('cancel-matching-btn').addEventListener('click', () => {
-    socket.emit('queue:leave');
+  // 対戦開始ボタン
+  document.getElementById('start-match-btn').addEventListener('click', () => {
+    if (customRoomName) {
+      socket.emit('custom-room:start-match', { roomName: customRoomName });
+    } else {
+      socket.emit('queue:start-match');
+    }
+  });
+
+  // ルール説明書を開くボタン
+  document.getElementById('show-rules-btn').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // 役職選択画面を隠し、ルール画面を表示する
+    document.getElementById('role-select-overlay').classList.add('hidden');
+    document.getElementById('rules-overlay').classList.remove('hidden');
+  });
+
+  // ルール画面から「ゲームに行く（戻る）」ボタン
+  document.getElementById('back-to-home-btn').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // ルール画面を隠し、役職選択画面を表示する
+    document.getElementById('rules-overlay').classList.add('hidden');
+    document.getElementById('role-select-overlay').classList.remove('hidden');
+  });
+
+  // マッチングキャンセルボタン (ホームに戻る)
+  document.getElementById('cancel-matching-btn').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (customRoomName) {
+      socket.emit('custom-room:leave', { roomName: customRoomName });
+      customRoomName = null;
+    } else {
+      socket.emit('queue:leave');
+    }
+    isInQueue = false; // キュー離脱
     resetReadyState();
-    document.getElementById('matching-overlay').classList.add('hidden');
+
+    setTimeout(() => {
+      document.getElementById('matching-overlay').classList.add('hidden');
+      document.getElementById('role-select-overlay').classList.remove('hidden'); // 確実にホームに戻す
+    }, 50);
   });
 
   // システム再起動ボタン (初期ロビーに戻る)
-  document.getElementById('reset-game-btn').addEventListener('click', () => {
-    socket.emit('queue:leave');
+  document.getElementById('reset-game-btn').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (customRoomName) {
+      socket.emit('custom-room:leave', { roomName: customRoomName });
+      customRoomName = null;
+    } else {
+      socket.emit('queue:leave');
+    }
+    isInQueue = false; // キュー離脱
     resetReadyState();
     myRoomId = null;
     myPlayerId = null;
-    document.getElementById('role-select-overlay').classList.remove('hidden');
+
+    setTimeout(() => {
+      document.getElementById('matching-overlay').classList.add('hidden');
+      document.getElementById('role-select-overlay').classList.remove('hidden');
+    }, 50);
   });
 
   // もう一度プレイする
-  document.getElementById('play-again-btn').addEventListener('click', () => {
+  document.getElementById('play-again-btn').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     myRoomId = null;
     myPlayerId = null;
-    document.getElementById('role-select-overlay').classList.remove('hidden');
+    isInQueue = false;
+    customRoomName = null;
+
+    setTimeout(() => {
+      document.getElementById('matching-overlay').classList.add('hidden');
+      document.getElementById('role-select-overlay').classList.remove('hidden');
+    }, 50);
   });
 
   // ダイスロール
@@ -327,6 +514,9 @@ function setupEventListeners() {
   // 戦闘報酬の選択リスナー
   document.getElementById('claim-loot-btn').addEventListener('click', () => {
     sendGameAction('reward:claim', { choice: 'loot' });
+  });
+  document.getElementById('claim-thread-btn').addEventListener('click', () => {
+    sendGameAction('reward:claim', { choice: 'thread' });
   });
   document.getElementById('claim-destroy-btn').addEventListener('click', () => {
     sendGameAction('reward:claim', { choice: 'destroy' });
@@ -451,6 +641,8 @@ function updateUI() {
         let mod = 0;
         if (player.role === 'witch' || player.role === 'tycoon') {
           mod += 3;
+        } else if (player.role === 'treasure_hunter') {
+          mod += 2;
         }
         const hasRing = items.includes('指輪');
         const hasAmulet = items.includes('アミュレット');
@@ -473,6 +665,10 @@ function updateUI() {
         if (target & 4) activeBits++;
         if (target & 2) activeBits++;
         if (target & 1) activeBits++;
+
+        if (player.role === 'tycoon') {
+          return 6;
+        }
 
         return activeBits;
       };
@@ -758,7 +954,8 @@ function renderMap() {
     // 移動可能ならハイライト
     const myReachable = state.reachableNodes && state.reachableNodes[meIdx] || [];
     const movedSelf = state.moved && state.moved[meIdx] !== undefined;
-    if (state.phase === 'MOVE' && !movedSelf && myReachable.includes(parseInt(nodeId))) {
+    const isReachable = state.phase === 'MOVE' && !movedSelf && myReachable.includes(parseInt(nodeId));
+    if (isReachable) {
       circle.className.baseVal += ' node-highlight';
       circle.addEventListener('click', () => selectMove(parseInt(nodeId)));
     }
@@ -772,7 +969,8 @@ function renderMap() {
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text.setAttribute('x', pos.x);
       text.setAttribute('y', pos.y);
-      text.className.baseVal = 'node-text';
+      // 移動可能なマスなら text-highlight クラスを追加
+      text.className.baseVal = `node-text ${isReachable ? 'text-highlight' : ''}`;
       text.textContent = nodeId;
       svg.appendChild(text);
     }
@@ -796,11 +994,14 @@ function renderMap() {
       let drawY = basePos.y;
 
       if (list.length > 1) {
-        const offsetRadius = 12;
+        const offsetRadius = 13;
         const angle = (index * 360) / list.length;
         const rad = degToRad(angle);
         drawX += Math.round(offsetRadius * Math.cos(rad));
         drawY += Math.round(-offsetRadius * Math.sin(rad));
+      } else {
+        // プレイヤーが1人だけの場合は、数字と重ならないよう円の上にシフト
+        drawY -= (posId === '0' ? 22 : 14);
       }
 
       const marker = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -858,6 +1059,10 @@ function setupCombatUI() {
   // 名前の設定
   document.getElementById('combat-cpu-name').textContent = opponent.name;
 
+  // バースト上限提示プロンプトの動的表示更新
+  const myLimit = player.role === 'witch' ? 2500 : (player.role === 'tycoon' ? 1800 : 2000);
+  document.querySelector('#ctrl-combat .prompt-text').textContent = `手札からカードを選択して出してください（累積が ${myLimit} を超えるとバースト自滅）。`;
+
   // 累積値の表示
   const mySum = isMeAttacker ? cState.attackerSum : cState.defenderSum;
   const oppSum = isMeAttacker ? cState.defenderSum : cState.attackerSum;
@@ -869,8 +1074,8 @@ function setupCombatUI() {
   const pSafety = document.getElementById('combat-player-safety');
   const oSafety = document.getElementById('combat-cpu-safety');
 
-  const pText = getBurstLevelText(mySum);
-  const oText = getBurstLevelText(oppSum);
+  const pText = getBurstLevelText(mySum, player.role);
+  const oText = getBurstLevelText(oppSum, opponent.role);
 
   pSafety.textContent = pText;
   pSafety.className = `safety-badge ${getBurstLevelClass(pText)}`;
@@ -934,11 +1139,15 @@ function getBurstLevelClass(text) {
 /**
  * バーストレベルテキスト
  */
-function getBurstLevelText(sum) {
-  if (sum <= 800) return '安全';
-  if (sum <= 1500) return '微熱';
-  if (sum <= 1900) return '過熱';
-  return '臨界点';
+function getBurstLevelText(sum, role) {
+  let limit = 2000;
+  if (role === 'witch') limit = 2500;
+  else if (role === 'tycoon') limit = 1800;
+
+  if (sum <= limit * 0.4) return '安全';
+  if (sum <= limit * 0.75) return '微熱';
+  if (sum <= limit) return '過熱';
+  return '臨界点 (バースト)';
 }
 
 /**
@@ -968,8 +1177,13 @@ function updateTreasuryDisplay() {
     }
   });
 
+  let displayCost = activeSlotsCount;
+  if (player && player.role === 'tycoon') {
+    displayCost = 6;
+  }
+
   document.getElementById('slots-sum-display').textContent = currentInputSum;
-  document.getElementById('slots-cost-display').textContent = activeSlotsCount;
+  document.getElementById('slots-cost-display').textContent = displayCost;
 }
 
 /**

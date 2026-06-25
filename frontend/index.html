@@ -51,7 +51,7 @@
             <h3>石油王</h3>
             <span class="role-badge gold">資金: 高</span>
           </div>
-          <p class="role-desc">強奪。他プレイヤーと同じマスに停止した際、資金や金糸を自動的に奪い取る。</p>
+          <p class="role-desc">強奪。他プレイヤーと同じマスに停止した際、金糸やHPを自動強奪する。※宝物庫の進入・解錠の際、目標値に関わらず常に蜘蛛の金糸が6本必要。</p>
         </div>
 
         <div class="role-card" data-role="witch">
@@ -69,9 +69,73 @@
         <input type="text" id="player-name-input" value="AGENT_ALPHA" style="width: 100%; padding: 10px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--color-cyan); border-radius: 4px; color: #fff; font-family: var(--font-mono); text-align: center; font-size: 1.1rem; text-shadow: var(--glow-cyan); outline: none; box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.1);">
       </div>
 
-      <div style="display: flex; gap: 16px; margin-top: 16px; width: 100%; max-width: 440px; justify-content: center;">
-        <button id="start-game-btn" class="cyber-btn" style="flex: 1; padding: 10px 16px; font-size: 0.85rem;">シングルプレイ (CPU戦)</button>
-        <button id="match-online-btn" class="cyber-btn" style="flex: 1; border-color: var(--color-gold); color: var(--color-gold); text-shadow: var(--glow-gold); padding: 10px 16px; font-size: 0.85rem;">オンライン対戦 (マルチ)</button>
+      <!-- カスタムルーム名（合言葉）入力欄 -->
+      <div class="room-input-container" style="margin: 0 0 20px 0; width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <label for="room-name-input" style="color: var(--color-gold); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.5px; text-transform: uppercase;">合言葉 / ルーム名 (任意)</label>
+        <input type="text" id="room-name-input" placeholder="合言葉を入力 (例: room123)" style="width: 100%; padding: 10px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--color-gold); border-radius: 4px; color: #fff; font-family: var(--font-mono); text-align: center; font-size: 1.1rem; text-shadow: var(--glow-gold); outline: none; box-shadow: inset 0 0 10px rgba(255, 183, 0, 0.1);">
+      </div>
+
+      <!-- ルール説明ボタン -->
+      <div style="margin: 5px 0 15px 0; width: 100%; max-width: 400px; display: flex; justify-content: center;">
+        <button id="show-rules-btn" type="button" class="cyber-btn-outline" style="border-color: var(--color-cyan); color: var(--color-cyan); text-shadow: var(--glow-cyan); padding: 8px 16px; font-size: 0.85rem; width: 100%;">📄 作戦ルール説明書を開く</button>
+      </div>
+
+      <div style="display: flex; gap: 16px; margin-top: 8px; width: 100%; max-width: 440px; justify-content: center;">
+        <button id="start-game-btn" type="button" class="cyber-btn" style="flex: 1; padding: 10px 16px; font-size: 0.85rem;">シングルプレイ (CPU戦)</button>
+        <button id="match-online-btn" type="button" class="cyber-btn" style="flex: 1; border-color: var(--color-gold); color: var(--color-gold); text-shadow: var(--glow-gold); padding: 10px 16px; font-size: 0.85rem;">オンライン対戦 (マルチ)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ルール説明専用オーバーレイ (別ページ) -->
+  <div id="rules-overlay" class="overlay hidden">
+    <div class="overlay-content rules-page-content" style="max-width: 700px; max-height: 90vh; display: flex; flex-direction: column; padding: 30px; position: relative;">
+      <h1 class="glow-text text-cyan" style="font-size: 1.8rem; margin-bottom: 4px;">OPERATIONAL MANUAL</h1>
+      <p class="subtitle" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px; letter-spacing: 2px;">アラクノフェア 作戦ルール説明書</p>
+      
+      <!-- ルール本文 (スクロール可能なエリア) -->
+      <div class="rules-scroll-area" style="flex: 1; overflow-y: auto; text-align: left; font-size: 0.8rem; line-height: 1.6; padding-right: 10px; margin-bottom: 70px; font-family: var(--font-mono); border-left: 2px solid var(--color-cyan); padding-left: 15px;">
+        <h3 style="color: var(--color-cyan); margin-top: 0; margin-bottom: 8px; border-bottom: 1px solid rgba(0, 240, 255, 0.3); padding-bottom: 4px; font-size: 0.95rem; font-family: var(--font-display); text-shadow: var(--glow-cyan); letter-spacing: 1px;">[SECURITY_PROTOCOL_RULES - 作戦ルール説明]</h3>
+        
+        <p style="margin: 0 0 12px 0; color: #fff;"><strong style="color: var(--color-gold);">1. 勝利条件 (中央の宝物庫解錠):</strong><br>
+        マップ中央の「宝物庫 (マス 0)」に到達し、自身の「解錠目標値 N」と一致するようにスロット (8・4・2・1) に蜘蛛の金糸を投入して解錠します。</p>
+        
+        <p style="margin: 0 0 12px 0; color: #fff;"><strong style="color: var(--color-gold);">2. 解錠目標値 N の特定:</strong><br>
+        目標値 $N$ はプレイヤーごとに異なり、以下で計算されます：<br>
+        <span class="text-cyan" style="font-weight: bold; font-size: 0.85rem; text-shadow: var(--glow-cyan);">$N = B (\text{基礎値}) + \text{役職補正} + \text{アイテム補正}$</span> (1〜15の範囲にクランプ)<br>
+        ・<b>基礎値 B (秘密の値)</b>: 1〜15。道中のイベントマスで「ON/OFF状態のヒント」を得て割り出します。<br>
+        ・<b>役職補正</b>: 石油王・魔女は $+3$、トレジャーハンターは $+2$ されます (冒険家・エンジニアは $+0$)。<br>
+        ・<b>代表的な目標値 (基礎値 B が 12 の場合)</b>:<br>
+        　- <b>冒険家</b>: <span class="text-cyan">12</span>、<b>エンジニア</b>: <span class="text-cyan">12</span><br>
+        　- <b>石油王</b>: <span class="text-cyan">15</span> (※金糸必要数は常に 6本)、<b>魔女</b>: <span class="text-cyan">15</span> (※魔女の補正+3による結果)<br>
+        　- <b>トレジャーハンター</b>: <span class="text-cyan">14</span> (※補正+2)<br>
+        ・<b>必要金糸数</b>: 通常は目標値のONビット数分（例：目標値12ならば 1100_2 で2本）が必要ですが、<b>石油王のみ目標値に関わらず常に6本</b>必要です。<br>
+        ・<b>アイテム補正 (セット効果)</b>: 指輪・アミュレット・王冠 of3種を揃えると $-2$（トレハンは $-3$）されます。</p>
+
+        <p style="margin: 0 0 12px 0; color: #fff;"><strong style="color: var(--color-gold);">3. 探索マスの効果:</strong><br>
+        - 🎁 <b>アイテムマス (黄色)</b>: 装備品 (指輪・アミュレット・王冠) の獲得チャンス。<br>
+        - 🔍 <b>イベントマス (シアン)</b>: 蜘蛛の金糸 (出現率高) または解錠ヒントを獲得。<br>
+        - ⚠️ <b>罠マス (ピンク)</b>: 500 HPダメージ & 次ターン移動力半減 (エンジニアは無効化)。<br>
+        - 🌀 <b>移動補正マス (緑)</b>: 50%で蜘蛛の巣 (移動-2) または強風 (内周へ強制移動)。</p>
+
+        <p style="margin: 0 0 12px 0; color: #fff;"><strong style="color: var(--color-gold);">4. バースト戦闘 (同一マス停止):</strong><br>
+        手札からカードを出し、<b>規定のバースト値（魔女は 2500、石油王は 1800、他は 2000）を超えるとバースト (即敗北・HP-500)</b> となります (※バースト値ピッタリは安全)。勝利時は相手からアイテム略奪 (Loot)、金糸強奪 (Steal Thread)、または手札破壊 (Destroy) から報酬を選択可能です。</p>
+
+        <p style="margin: 0 0 12px 0; color: #fff;"><strong style="color: var(--color-gold);">5. オンラインマッチングルール:</strong><br>
+        ・<b>合言葉あり (カスタムルーム)</b>: 同じ合言葉を入力したプレイヤー同士でマッチング。全員が「準備OK」になると、誰かが「対戦開始」ボタンを押して即開始可能 (不足分はCPU)。<br>
+        ・<b>合言葉なし (オートマッチング)</b>: 合言葉なしのプレイヤー同士でマッチング。人間が 2人以上 で全員が「準備OK」になると「対戦開始」ボタンが出現し、手動でゲームを開始できます。</p>
+        
+        <p style="margin: 0 0 12px 0; color: #fff;"><strong style="color: var(--color-gold);">6. 役職 (ロール) 固有の力:</strong><br>
+        ・<b>冒険家</b>: 隣接マスの追加選択肢、アイテム/イベント発見率が非常に高い。<br>
+        ・<b>エンジニア</b>: 罠ダメージ無効、アイテム獲得時に追加でもう1つ獲得。<br>
+        ・<b>トレジャーハンター</b>: セット効果補正が $-3$ 強化、戦闘勝利時にカード追加補充。<br>
+        ・<b>石油王</b>: 同一マス停止で相手から金糸1本(またはHP 300)を自動強奪 (目標値 $+3$ デバフあり)。※宝物庫の進入・解錠の際、目標値に関わらず常に蜘蛛の金糸が6本必要となります。バースト上限は 1800 に制限されます。<br>
+        ・<b>魔女</b>: 同一マス停止で相手に呪い(次ターン移動力1固定)を付与 (目標値 $+3$ デバフあり)。バースト上限が 2500 に拡張されますが、カード取得率が低下します。</p>
+      </div>
+      
+      <!-- 最下部固定の「ゲームに行く」ボタンエリア -->
+      <div class="rules-footer-fixed" style="position: absolute; bottom: 0; left: 0; right: 0; background: var(--bg-secondary); border-top: 1px solid rgba(0, 240, 255, 0.2); padding: 15px 30px; display: flex; justify-content: center; border-radius: 0 0 12px 12px; z-index: 10;">
+        <button id="back-to-home-btn" type="button" class="cyber-btn success-glow" style="width: 100%; max-width: 320px; padding: 12px; font-weight: bold; border-color: var(--color-green); color: var(--color-green); text-shadow: var(--glow-green);">ゲームに行く (閉じる)</button>
       </div>
     </div>
   </div>
@@ -91,9 +155,12 @@
         </div>
       </div>
 
-      <div style="display: flex; gap: 16px; width: 100%; justify-content: center;">
-        <button id="ready-matching-btn" class="cyber-btn success-glow" style="flex: 1; padding: 10px 16px; font-size: 0.85rem;">準備OK (Ready)</button>
-        <button id="cancel-matching-btn" class="cyber-btn-outline danger" style="flex: 1; padding: 10px 16px; font-size: 0.85rem;">キャンセル</button>
+      <div style="display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 400px; margin: 0 auto;">
+        <button id="start-match-btn" type="button" class="cyber-btn warning-glow hidden" style="width: 100%; padding: 12px 16px; font-size: 1.05rem; font-weight: bold; border-color: var(--color-gold); color: var(--color-gold); text-shadow: var(--glow-gold);">対戦開始 (Start Game)</button>
+        <div style="display: flex; gap: 16px; width: 100%;">
+          <button id="ready-matching-btn" type="button" class="cyber-btn success-glow" style="flex: 1; padding: 10px 16px; font-size: 0.85rem;">準備OK (Ready)</button>
+          <button id="cancel-matching-btn" type="button" class="cyber-btn-outline danger" style="flex: 1; padding: 10px 16px; font-size: 0.85rem;">ホームに戻る</button>
+        </div>
       </div>
     </div>
   </div>
@@ -307,6 +374,7 @@
               <p class="prompt-text">戦闘に勝利しました！略奪する報酬を選択してください。</p>
               <div class="btn-grid">
                 <button id="claim-loot-btn" class="cyber-btn success-glow">アイテムを略奪する</button>
+                <button id="claim-thread-btn" class="cyber-btn success-glow">金糸を強奪する</button>
                 <button id="claim-destroy-btn" class="cyber-btn success-glow">手札を破壊する</button>
               </div>
             </div>

@@ -256,9 +256,11 @@ function shuffleArray(arr) {
 function calculateTargetForPlayer(player, baseTarget) {
   let mod = 0;
 
-  // 役職補正: 魔女・石油王は +3
+  // 役職補正: 魔女・石油王は +3、トレジャーハンターは +2
   if (player.role === 'witch' || player.role === 'tycoon') {
     mod += 3;
+  } else if (player.role === 'treasure_hunter') {
+    mod += 2;
   }
 
   // アイテム補正 (セットコレクション): 
@@ -287,20 +289,68 @@ function calculateTargetForPlayer(player, baseTarget) {
  * 2進数ヒントを生成する
  */
 function generateHint(baseTarget, player) {
+  const targetN = calculateTargetForPlayer(player, baseTarget);
+
+  // 1. 取得済みのヒントカテゴリを確認
+  const hasEvenOdd = player.hints.some(h => h.category === 'even-odd');
+  const hasRange = player.hints.some(h => h.category === 'range');
+  const hasThreshold = player.hints.some(h => h.category === 'threshold');
+  const hasCount = player.hints.some(h => h.category === 'count');
+
   const bits = [8, 4, 2, 1];
-  // プレイヤーがまだ知らないビットのヒントを選ぶ
   const remainingBits = bits.filter(b => !player.hints.some(h => h.bit === b));
 
-  if (remainingBits.length === 0) {
-    return { bit: null, text: 'すべての桁のヒントは既に得られています。' };
+  // 性質ヒントのうち未習得のものをリストアップ
+  const availProperties = [];
+  if (!hasEvenOdd) availProperties.push('even-odd');
+  if (!hasRange) availProperties.push('range');
+  if (!hasThreshold) availProperties.push('threshold');
+  if (!hasCount) availProperties.push('count');
+
+  // ビットか性質ヒントのどちらを選ぶか決定 (50%の確率で性質ヒント、ただし残っている方を選択)
+  let chooseProperty = Math.random() < 0.5;
+  if (availProperties.length === 0) chooseProperty = false;
+  if (remainingBits.length === 0) chooseProperty = true;
+
+  if (chooseProperty && availProperties.length > 0) {
+    // 性質ヒントを生成
+    const category = availProperties[Math.floor(Math.random() * availProperties.length)];
+    let text = '';
+
+    if (category === 'even-odd') {
+      const isEven = (targetN % 2 === 0);
+      text = `補正後の目標値 N は「${isEven ? '偶数' : '奇数'}」である。`;
+    } 
+    else if (category === 'range') {
+      const isUpper = (targetN >= 8);
+      text = `補正後の目標値 N は「${isUpper ? '8 以上' : '7 以下'}」である。`;
+    } 
+    else if (category === 'threshold') {
+      const threshold = Math.random() < 0.5 ? 5 : 10;
+      const isGreater = (targetN > threshold);
+      text = `補正後の目標値 N は「${threshold} ${isGreater ? 'より大きい' : '以下'}」である。`;
+    } 
+    else if (category === 'count') {
+      let activeBits = 0;
+      if (targetN & 8) activeBits++;
+      if (targetN & 4) activeBits++;
+      if (targetN & 2) activeBits++;
+      if (targetN & 1) activeBits++;
+      text = `補正後の目標値 N の解錠に必要な金糸（ONにするスロット）は「合計 ${activeBits} 本」である。`;
+    }
+
+    return { bit: null, category, text };
+  } 
+  else if (remainingBits.length > 0) {
+    // 従来のビットON/OFFヒントを生成
+    const chosenBit = remainingBits[Math.floor(Math.random() * remainingBits.length)];
+    const isOn = (baseTarget & chosenBit) !== 0;
+    const text = `基礎値 B の ${chosenBit}の位（重み ${chosenBit}）は「${isOn ? 'ON (1)' : 'OFF (0)'}」である。`;
+
+    return { bit: chosenBit, category: 'bit', text };
   }
 
-  // ランダムに1つ選んで開示
-  const chosenBit = remainingBits[Math.floor(Math.random() * remainingBits.length)];
-  const isOn = (baseTarget & chosenBit) !== 0;
-  const text = `${chosenBit}の位（重み${chosenBit}）は「${isOn ? 'ON (1)' : 'OFF (0)'}」である。`;
-
-  return { bit: chosenBit, text };
+  return { bit: null, category: null, text: 'すべてのヒントは既に得られています。' };
 }
 
 /**
@@ -309,8 +359,8 @@ function generateHint(baseTarget, player) {
 function getBurstLevelText(totalSum) {
   if (totalSum <= 800) return '安全';
   if (totalSum <= 1500) return '微熱';
-  if (totalSum <= 1900) return '過熱';
-  return '臨界点 (バースト寸前)';
+  if (totalSum <= 2000) return '過熱';
+  return '臨界点 (バースト)';
 }
 
 /**
@@ -404,7 +454,7 @@ function getReachableNodes(startNode, steps, player) {
  * 連続してハズレを引いた場合、次回金糸やアイテムが出る確率を上昇させる
  */
 function drawEventWithPseudoRandom(player, baseTarget) {
-  const baseSuccessProb = 0.4; // 基礎成功確率 40%
+  const baseSuccessProb = 0.55; // 基礎成功確率を 40% -> 55% へ上方修正
   // 役職による確率補正 (冒険家は高く、魔女は低い)
   let roleModifier = 0;
   if (player.role === 'adventurer') roleModifier = 0.2;
@@ -417,8 +467,8 @@ function drawEventWithPseudoRandom(player, baseTarget) {
 
   if (isSuccess) {
     player.missCount = 0; // 成功したためカウンターをリセット
-    // 蜘蛛の金糸を獲得するか、ヒントを獲得するか
-    if (Math.random() < 0.5) {
+    // 65% の確率で金糸を獲得、35% の確率でヒントを獲得 (金糸の出現率を上方修正)
+    if (Math.random() < 0.65) {
       player.threads += 1;
       return {
         type: 'thread',
@@ -426,7 +476,7 @@ function drawEventWithPseudoRandom(player, baseTarget) {
       };
     } else {
       const hint = generateHint(baseTarget, player);
-      if (hint.bit !== null) {
+      if (hint.category !== null) {
         player.hints.push(hint);
       }
       return {
@@ -463,9 +513,17 @@ function drawItemWithPseudoRandom(player) {
       : possibleItems[Math.floor(Math.random() * possibleItems.length)];
 
     player.items.push(chosenItem);
-    // 戦闘力を上げるため、手札も1枚補充
-    player.cards.push((Math.floor(Math.random() * 10) + 1) * 100);
-    player.cards.sort((a, b) => a - b);
+    
+    // 戦闘力を上げるため、手札も1枚補充 (魔女は50%で補充)
+    let drewCard = true;
+    if (player.role === 'witch') {
+      drewCard = Math.random() < 0.5;
+    }
+
+    if (drewCard) {
+      player.cards.push((Math.floor(Math.random() * 10) + 1) * 100);
+      player.cards.sort((a, b) => a - b);
+    }
 
     // エンジニアの特性: アイテム獲得時に追加でもう1枚引ける
     if (player.role === 'engineer' && player.items.length < 5) {
@@ -479,16 +537,28 @@ function drawItemWithPseudoRandom(player) {
 
     return {
       type: 'item',
-      text: `${player.name}はアイテム「${chosenItem}」を獲得し、手札カードを1枚補充しました！`
+      text: drewCard 
+        ? `${player.name}はアイテム「${chosenItem}」を獲得し、手札カードを1枚補充しました！`
+        : `${player.name}はアイテム「${chosenItem}」を獲得しました！(魔女特性により手札の補充はなし)`
     };
   } else {
     player.missCount += 1;
-    // 最低限、戦闘用カードを1枚配る
-    player.cards.push((Math.floor(Math.random() * 6) + 1) * 100);
-    player.cards.sort((a, b) => a - b);
+    // 最低限、戦闘用カードを1枚配る (魔女は50%で配る)
+    let drewCard = true;
+    if (player.role === 'witch') {
+      drewCard = Math.random() < 0.5;
+    }
+
+    if (drewCard) {
+      player.cards.push((Math.floor(Math.random() * 6) + 1) * 100);
+      player.cards.sort((a, b) => a - b);
+    }
+
     return {
       type: 'miss',
-      text: `${player.name}は目ぼしい装備は見つかりませんでした。代わりに戦闘カードを1枚補充しました。`
+      text: drewCard
+        ? `${player.name}は目ぼしい装備は見つかりませんでした。代わりに戦闘カードを1枚補充しました。`
+        : `${player.name}は目ぼしい装備は見つかりませんでした。(魔女特性により手札の補充はなし)`
     };
   }
 }
@@ -497,12 +567,15 @@ function drawItemWithPseudoRandom(player) {
  * CPUの意思決定ロジック (戦闘時のカードプレイ)
  */
 function makeCpuCombatDecision(cpuPlayer, currentSum, oppSum, round) {
-  const limit = 2000;
+  let limit = 2000;
+  if (cpuPlayer.role === 'witch') limit = 2500;
+  else if (cpuPlayer.role === 'tycoon') limit = 1800;
+
   if (!cpuPlayer.cards || cpuPlayer.cards.length === 0) {
     return 0; // 手札切れのためスキップ
   }
   // 手札からバーストしない安全なカードを選択する
-  const safeCards = cpuPlayer.cards.filter(c => currentSum + c < limit);
+  const safeCards = cpuPlayer.cards.filter(c => currentSum + c <= limit);
 
   // もし安全なカードがないなら、バースト回避のためスキップ（パス）を選択
   if (safeCards.length === 0) {
