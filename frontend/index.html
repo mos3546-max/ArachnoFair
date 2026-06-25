@@ -18,7 +18,7 @@
   <div id="role-select-overlay" class="overlay">
     <div class="overlay-content">
       <h1 class="glow-text">ARACHNOFAIR</h1>
-      <p class="subtitle">アラクノフェア - テキスト＆数理探索ゲーム</p>
+      <p class="subtitle">アラクノフェア - カード＆数理探索ゲーム</p>
       <h2>探索を開始する前に、あなたの役職（ロール）を選択してください</h2>
       
       <div class="role-grid">
@@ -28,7 +28,7 @@
             <span class="role-badge speed">移動: 高</span>
           </div>
           <p class="role-desc">探索特化。移動時の選択肢が常に1つ多く、アイテム発見率が非常に高い。</p>
-          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50 (アイテム全収集で開示)</div>
+          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">アイテム全収集で解錠値開示 / 必要金糸5本</div>
         </div>
         
         <div class="role-card" data-role="engineer">
@@ -37,7 +37,7 @@
             <span class="role-badge item">アイテム: 高</span>
           </div>
           <p class="role-desc">アイテム使用回数+1。罠マスのダメージおよび移動制限ペナルティを無効化する。</p>
-          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50 (アイテム全収集で開示)</div>
+          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">アイテム全収集で解錠値開示 / 必要金糸5本</div>
         </div>
 
         <div class="role-card" data-role="treasure_hunter">
@@ -46,7 +46,7 @@
             <span class="role-badge combat">戦闘: 極高</span>
           </div>
           <p class="role-desc">セットコレクションの補正倍率強化。戦闘時、初期値補正と戦闘勝利確率が極めて高い。</p>
-          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50 (アイテム全収集で開示)</div>
+          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">アイテム全収集で開示 / 必要金糸7本</div>
         </div>
 
         <div class="role-card" data-role="tycoon">
@@ -55,7 +55,7 @@
             <span class="role-badge gold">資金: 高</span>
           </div>
           <p class="role-desc">強奪。他プレイヤーと同じマスに停止した際、金糸やHPを自動強奪する。</p>
-          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50 (アイテム全収集で開示 / 必要金糸は常に9本)</div>
+          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">アイテム全収集で解錠値開示 / 必要金糸9本</div>
         </div>
 
         <div class="role-card" data-role="witch">
@@ -64,25 +64,25 @@
             <span class="role-badge curse">呪い: 高</span>
           </div>
           <p class="role-desc">呪術特化。同じマスに停止した相手の移動力を1に固定し、バースト上限を拡張する。</p>
-          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50 (アイテム全収集で開示)</div>
+          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">アイテム全収集で解錠値開示 / 必要金糸7本</div>
         </div>
       </div>
 
       <!-- プレイヤーネーム入力欄 -->
       <div class="name-input-container" style="margin: 24px 0 12px 0; width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-        <label for="player-name-input" style="color: var(--color-cyan); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.5px; text-transform: uppercase;">エージェント・識別ネームを入力してください</label>
+        <label for="player-name-input" style="color: var(--color-cyan); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.5px; text-transform: uppercase;">エージェントネームを入力してください</label>
         <input type="text" id="player-name-input" value="AGENT_ALPHA" style="width: 100%; padding: 10px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--color-cyan); border-radius: 4px; color: #fff; font-family: var(--font-mono); text-align: center; font-size: 1.1rem; text-shadow: var(--glow-cyan); outline: none; box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.1);">
       </div>
 
       <!-- カスタムルーム名（合言葉）入力欄 -->
       <div class="room-input-container" style="margin: 0 0 20px 0; width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-        <label for="room-name-input" style="color: var(--color-gold); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.5px; text-transform: uppercase;">合言葉 / ルーム名 (任意)</label>
+        <label for="room-name-input" style="color: var(--color-gold); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.5px; text-transform: uppercase;">合言葉 (任意)</label>
         <input type="text" id="room-name-input" placeholder="合言葉を入力 (例: room123)" style="width: 100%; padding: 10px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--color-gold); border-radius: 4px; color: #fff; font-family: var(--font-mono); text-align: center; font-size: 1.1rem; text-shadow: var(--glow-gold); outline: none; box-shadow: inset 0 0 10px rgba(255, 183, 0, 0.1);">
       </div>
 
       <!-- ルール説明ボタン -->
       <div style="margin: 5px 0 15px 0; width: 100%; max-width: 400px; display: flex; justify-content: center;">
-        <button id="show-rules-btn" type="button" class="cyber-btn-outline" style="border-color: var(--color-cyan); color: var(--color-cyan); text-shadow: var(--glow-cyan); padding: 8px 16px; font-size: 0.85rem; width: 100%;">📄 作戦ルール説明書を開く</button>
+        <button id="show-rules-btn" type="button" class="cyber-btn-outline" style="border-color: var(--color-cyan); color: var(--color-cyan); text-shadow: var(--glow-cyan); padding: 8px 16px; font-size: 0.85rem; width: 100%;">📄 ルール説明書を開く</button>
       </div>
 
       <div style="display: flex; gap: 16px; margin-top: 8px; width: 100%; max-width: 440px; justify-content: center;">
@@ -171,7 +171,7 @@
     <!-- ヘッダーエリア -->
     <header class="game-header">
       <div class="logo">
-        <h1 class="glow-text">ARACHNOFAIR <span class="version">v1.2.0</span></h1>
+        <h1 class="glow-text">ARACHNOFAIR</h1>
       </div>
       <div class="game-info">
         <div class="info-block">
@@ -237,7 +237,7 @@
             </div>
             <div class="status-item flex-row">
               <div>
-                <span class="label">所持金糸 (蓄積)</span>
+                <span class="label">所持金糸</span>
                 <!-- ドミニオン風強調表示 (枠の外に浮き出ているような強調表示) -->
                 <div class="thread-display-container">
                   <span id="thread-count" class="value glow-num">0</span>
@@ -249,13 +249,12 @@
               </div>
             </div>
             <div class="status-item">
-              <span class="label">獲得アイテム (セット効果狙い)</span>
+              <span class="label">獲得アイテム</span>
               <div id="item-list" class="badge-list">
                 <span class="badge empty">なし</span>
               </div>
             </div>
             <div class="status-item">
-              <span class="label">入手した2進数ヒント (ON/OFF状態)</span>
               <div id="hint-list" class="hint-list">
                 <span class="hint-empty">探索でヒントを見つけましょう...</span>
               </div>
@@ -278,7 +277,7 @@
             
             <!-- ダイスを振るフェーズ -->
             <div id="ctrl-roll" class="ctrl-group hidden">
-              <p class="prompt-text">あなたのターンです。移動用のダイスをロールしてください。</p>
+              <p class="prompt-text">あなたのターンです。ダイスをロールしてください。</p>
               <button id="roll-dice-btn" class="cyber-btn pulse-glow">ダイスをロール</button>
             </div>
 
@@ -314,7 +313,7 @@
                   </div>
                 </div>
               </div>
-              <p class="prompt-text">手札からカードを選択して出してください（累積が2000を超えるとバースト自滅）。</p>
+              <p class="prompt-text">手札からカードを選択して出してください（累積が上限値を超えるとバースト）。</p>
               <div id="combat-hand" class="card-hand">
                 <!-- 手札カードが動的に表示されます -->
               </div>
@@ -373,9 +372,9 @@
               <h3 class="glow-text text-green">VICTORY REWARD</h3>
               <p class="prompt-text">戦闘に勝利しました！略奪する報酬を選択してください。</p>
               <div class="btn-grid">
-                <button id="claim-loot-btn" class="cyber-btn success-glow">アイテムを略奪する</button>
-                <button id="claim-thread-btn" class="cyber-btn success-glow">金糸を強奪する</button>
-                <button id="claim-destroy-btn" class="cyber-btn success-glow">手札を破壊する</button>
+                <button id="claim-loot-btn" class="cyber-btn success-glow">アイテム略奪</button>
+                <button id="claim-thread-btn" class="cyber-btn success-glow">金糸強奪</button>
+                <button id="claim-destroy-btn" class="cyber-btn success-glow">手札破壊</button>
               </div>
             </div>
 
@@ -383,7 +382,7 @@
             <div id="ctrl-gameover" class="ctrl-group hidden">
               <h3 id="game-over-title" class="glow-text text-green">GAME OVER</h3>
               <p id="game-over-desc" class="prompt-text">-</p>
-              <button id="play-again-btn" class="cyber-btn pulse-glow">もう一度プレイする</button>
+              <button id="play-again-btn" class="cyber-btn pulse-glow">ホームに戻る</button>
             </div>
 
           </div>
