@@ -250,24 +250,14 @@ function resolveNodeLanding(gameState, player, node) {
 
   if (node === 0) {
     // 宝物庫（中央）に到着
-    const targetN = game.calculateTargetForPlayer(player, gameState.baseTarget);
-    
-    let activeBits = 0;
-    if (targetN & 8) activeBits++;
-    if (targetN & 4) activeBits++;
-    if (targetN & 2) activeBits++;
-    if (targetN & 1) activeBits++;
+    const reqThreads = game.getRequiredThreadsForPlayer(player);
 
-    if (player.role === 'tycoon') {
-      activeBits = 6;
-    }
-
-    if (player.threads < activeBits) {
+    if (player.threads < reqThreads) {
       // 蜘蛛の金糸が不足している場合、ランダムなマス（1〜33）に弾き飛ばされる
       const randomNode = Math.floor(Math.random() * 33) + 1;
       player.pos = randomNode;
       player.hp = Math.max(0, player.hp - 300); // 結界による衝撃ダメージ
-      addLog(gameState, `【警告】${player.name}は宝物庫に進入しましたが、金糸数（${player.threads}本）が必要数（${activeBits}本）に満たないため、防衛結界によりHP-300のダメージを受け、マス ${randomNode} に弾き飛ばされました！`);
+      addLog(gameState, `【警告】${player.name}は宝物庫に進入しましたが、金糸数（${player.threads}本）が必要数（${reqThreads}本）に満たないため、防衛結界によりHP-300のダメージを受け、マス ${randomNode} に弾き飛ばされました！`);
       
       if (player.hp <= 0) {
         player.hp = 3000;
@@ -341,7 +331,7 @@ function resolveNodeLanding(gameState, player, node) {
 function executeAllPlayersMoveAndResolve(gameState, roomId) {
   addLog(gameState, `【システム】全員の移動先が確定しました。一斉移動を開始します。`);
 
-  // 1. 位置の更新とデバフのクリア
+  // 1. 位置の更新とデバフのクリア、および移動カード獲得
   gameState.players.forEach(p => {
     if (p.hp <= 0) return;
     const dest = gameState.moved[p.id];
@@ -350,6 +340,12 @@ function executeAllPlayersMoveAndResolve(gameState, roomId) {
     p.mobilityDebuff = false;
     p.stickyDebuff = false;
     p.cursed = false;
+
+    // 移動時にランダムな数のカードを1枚必ず取得
+    const newCard = (Math.floor(Math.random() * 10) + 1) * 100;
+    p.cards.push(newCard);
+    p.cards.sort((a, b) => a - b);
+    addLog(gameState, `【移動ボーナス】${p.name}は移動により戦闘カード（値: ${newCard}）を1枚獲得しました。`);
   });
 
   // 2. 各プレイヤーの着地イベント解決
@@ -469,18 +465,9 @@ function checkTreasuryEntry(gameState, roomId) {
   const candidates = [];
   gameState.players.forEach(p => {
     if (p.pos === 0 && p.hp > 0) {
-      const targetN = game.calculateTargetForPlayer(p, gameState.baseTarget);
-      let activeBits = 0;
-      if (targetN & 8) activeBits++;
-      if (targetN & 4) activeBits++;
-      if (targetN & 2) activeBits++;
-      if (targetN & 1) activeBits++;
+      const reqThreads = game.getRequiredThreadsForPlayer(p);
 
-      if (p.role === 'tycoon') {
-        activeBits = 6;
-      }
-
-      if (p.threads >= activeBits) {
+      if (p.threads >= reqThreads) {
         candidates.push(p.id);
       }
     }
@@ -858,14 +845,20 @@ function attemptCpuUnlock(gameState, cpu) {
   const targetN = game.calculateTargetForPlayer(cpu, gameState.baseTarget);
   
   let activeBits = 0;
-  const slotsToActivate = { '8': false, '4': false, '2': false, '1': false };
-  if (targetN & 8) { slotsToActivate['8'] = true; activeBits++; }
-  if (targetN & 4) { slotsToActivate['4'] = true; activeBits++; }
-  if (targetN & 2) { slotsToActivate['2'] = true; activeBits++; }
-  if (targetN & 1) { slotsToActivate['1'] = true; activeBits++; }
+  let tempN = targetN;
+  const slotsToActivate = { '8': 0, '4': 0, '2': 0, '1': 0 };
+  const weights = [8, 4, 2, 1];
+  weights.forEach(w => {
+    const qty = Math.floor(tempN / w);
+    if (qty > 0) {
+      slotsToActivate[w.toString()] = qty;
+      activeBits += qty;
+      tempN -= w * qty;
+    }
+  });
 
   if (cpu.role === 'tycoon') {
-    activeBits = 6;
+    activeBits = 9;
   }
 
   if (cpu.threads >= activeBits) {
@@ -873,7 +866,11 @@ function attemptCpuUnlock(gameState, cpu) {
     cpu.threads = Math.max(0, cpu.threads - activeBits);
     gameState.phase = 'GAME_OVER';
     gameState.winner = cpu.id;
-    addLog(gameState, `【ゲームオーバー】${cpu.name}は目標値 ${targetN} に合わせて金糸をスロット[${Object.keys(slotsToActivate).filter(k=>slotsToActivate[k]).join(', ')}]に投入し、見事に宝物庫を解錠しました！`);
+    const activeDesc = Object.keys(slotsToActivate)
+      .filter(k => slotsToActivate[k] > 0)
+      .map(k => `${k}x${slotsToActivate[k]}`)
+      .join(', ');
+    addLog(gameState, `【ゲームオーバー】${cpu.name}は目標値 ${targetN} に合わせて金糸をスロット[${activeDesc}]に投入し、見事に宝物庫を解錠しました！`);
   } else {
     const randomNode = Math.floor(Math.random() * 3) + 31; // 内周に弾かれる
     cpu.pos = randomNode;
@@ -1312,16 +1309,18 @@ io.on('connection', (socket) => {
       const slots = data.slots; // { '8': boolean, '4': boolean, '2': boolean, '1': boolean }
       const targetN = game.calculateTargetForPlayer(player, gameState.baseTarget);
 
-      // アクティブなスロットの合計を算出
+      // アクティブなスロットの合計を算出 (複数個の投入に対応)
       let sum = 0;
       let activeCount = 0;
-      if (slots['8']) { sum += 8; activeCount++; }
-      if (slots['4']) { sum += 4; activeCount++; }
-      if (slots['2']) { sum += 2; activeCount++; }
-      if (slots['1']) { sum += 1; activeCount++; }
+      const weights = ['8', '4', '2', '1'];
+      weights.forEach(w => {
+        const count = parseInt(slots[w] || 0);
+        sum += parseInt(w) * count;
+        activeCount += count;
+      });
 
       if (player.role === 'tycoon') {
-        activeCount = 6;
+        activeCount = 9;
       }
 
       if (player.threads < activeCount) return; // 金糸不足
@@ -1333,7 +1332,7 @@ io.on('connection', (socket) => {
         // 解錠成功！ゲームオーバー
         gameState.phase = 'GAME_OVER';
         gameState.winner = player.id;
-        addLog(gameState, `【ミッション成功】${player.name}は基礎目標値${gameState.baseTarget}に補正を加えた自身の解錠目標値 N = [${targetN}] (${sum}) を金糸の投入により完全一致させ、宝物庫の解錠に成功しました！`);
+        addLog(gameState, `【ミッション成功】${player.name}は自身の解錠目標値 N = [${targetN}] (${sum}) を金糸の投入により完全一致させ、宝物庫の解錠に成功しました！`);
       } else {
         // 失敗時のペナルティ
         const penaltyNodes = [31, 32, 33];

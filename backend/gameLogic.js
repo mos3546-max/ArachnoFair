@@ -254,35 +254,23 @@ function shuffleArray(arr) {
  * N = B (ベース値) + 役職補正 + アイテム補正
  */
 function calculateTargetForPlayer(player, baseTarget) {
-  let mod = 0;
+  if (!player) return 13;
+  if (player.role === 'adventurer' || player.role === 'engineer') return 13;
+  if (player.role === 'treasure_hunter') return 15;
+  if (player.role === 'tycoon' || player.role === 'witch') return 19;
+  return 13;
+}
 
-  // 役職補正: 魔女・石油王は +3、トレジャーハンターは +2
-  if (player.role === 'witch' || player.role === 'tycoon') {
-    mod += 3;
-  } else if (player.role === 'treasure_hunter') {
-    mod += 2;
-  }
-
-  // アイテム補正 (セットコレクション): 
-  // Ring, Amulet, Crown の3種類が揃っていると -2 (トレジャーハンターは -3)
-  const hasRing = player.items.includes('指輪');
-  const hasAmulet = player.items.includes('アミュレット');
-  const hasCrown = player.items.includes('王冠');
-
-  if (hasRing && hasAmulet && hasCrown) {
-    if (player.role === 'treasure_hunter') {
-      mod -= 3;
-    } else {
-      mod -= 2;
-    }
-  }
-
-  // 1〜15の範囲にクランプする (2進法4ビット 1~15 で表現するため)
-  let target = baseTarget + mod;
-  if (target < 1) target = 1;
-  if (target > 15) target = 15;
-
-  return target;
+/**
+ * プレイヤーが宝物庫に進入・解錠するために必要な最低金糸数を取得する
+ */
+function getRequiredThreadsForPlayer(player) {
+  if (!player) return 5;
+  if (player.role === 'adventurer' || player.role === 'engineer') return 5;
+  if (player.role === 'treasure_hunter') return 7;
+  if (player.role === 'witch') return 7;
+  if (player.role === 'tycoon') return 9;
+  return 5;
 }
 
 /**
@@ -467,23 +455,11 @@ function drawEventWithPseudoRandom(player, baseTarget) {
 
   if (isSuccess) {
     player.missCount = 0; // 成功したためカウンターをリセット
-    // 65% の確率で金糸を獲得、35% の確率でヒントを獲得 (金糸の出現率を上方修正)
-    if (Math.random() < 0.65) {
-      player.threads += 1;
-      return {
-        type: 'thread',
-        text: `${player.name}は蜘蛛の金糸を1本獲得しました！ (所持金糸: ${player.threads})`
-      };
-    } else {
-      const hint = generateHint(baseTarget, player);
-      if (hint.category !== null) {
-        player.hints.push(hint);
-      }
-      return {
-        type: 'hint',
-        text: `${player.name}は解錠のヒントを入手しました！`
-      };
-    }
+    player.threads += 1;
+    return {
+      type: 'thread',
+      text: `${player.name}は蜘蛛の金糸を1本獲得しました！ (所持金糸: ${player.threads})`
+    };
   } else {
     player.missCount += 1; // ハズレ回数をカウントアップ
     return {
@@ -643,6 +619,7 @@ module.exports = {
   ROLES,
   createInitialState,
   calculateTargetForPlayer,
+  getRequiredThreadsForPlayer,
   generateInitialHand,
   generateHint,
   getBurstLevelText,

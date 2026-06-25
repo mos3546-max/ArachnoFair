@@ -529,12 +529,12 @@ function setupEventListeners() {
   plusButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const weight = btn.dataset.weight;
-      const activeCount = Object.values(treasurySlots).filter(Boolean).length;
+      const totalAllocated = Object.values(treasurySlots).reduce((a, b) => a + b, 0);
       const meIdx = myPlayerId !== null ? myPlayerId : 0;
       const player = state.players[meIdx];
       
-      if (player.threads > activeCount && !treasurySlots[weight]) {
-        treasurySlots[weight] = 1;
+      if (player.threads > totalAllocated) {
+        treasurySlots[weight] = (treasurySlots[weight] || 0) + 1;
         updateTreasuryDisplay();
       }
     });
@@ -543,8 +543,8 @@ function setupEventListeners() {
   minusButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const weight = btn.dataset.weight;
-      if (treasurySlots[weight]) {
-        treasurySlots[weight] = 0;
+      if (treasurySlots[weight] && treasurySlots[weight] > 0) {
+        treasurySlots[weight] -= 1;
         updateTreasuryDisplay();
       }
     });
@@ -637,40 +637,12 @@ function updateUI() {
     // 宝物庫進入条件（セキュリティ解析）
     const securityEl = document.getElementById('treasury-security-status');
     if (securityEl) {
-      const getRequiredThreads = (items) => {
-        let mod = 0;
-        if (player.role === 'witch' || player.role === 'tycoon') {
-          mod += 3;
-        } else if (player.role === 'treasure_hunter') {
-          mod += 2;
-        }
-        const hasRing = items.includes('指輪');
-        const hasAmulet = items.includes('アミュレット');
-        const hasCrown = items.includes('王冠');
-
-        if (hasRing && hasAmulet && hasCrown) {
-          if (player.role === 'treasure_hunter') {
-            mod -= 3;
-          } else {
-            mod -= 2;
-          }
-        }
-
-        let target = state.baseTarget + mod;
-        if (target < 1) target = 1;
-        if (target > 15) target = 15;
-
-        let activeBits = 0;
-        if (target & 8) activeBits++;
-        if (target & 4) activeBits++;
-        if (target & 2) activeBits++;
-        if (target & 1) activeBits++;
-
-        if (player.role === 'tycoon') {
-          return 6;
-        }
-
-        return activeBits;
+      const getRequiredThreads = () => {
+        if (player.role === 'adventurer' || player.role === 'engineer') return 5;
+        if (player.role === 'treasure_hunter') return 7;
+        if (player.role === 'witch') return 7;
+        if (player.role === 'tycoon') return 9;
+        return 5;
       };
 
       const currentReq = getRequiredThreads(player.items || []);
@@ -723,19 +695,17 @@ function updateUI() {
       itemList.innerHTML = '<span class="badge empty">なし</span>';
     }
 
-    // 2進数ヒント
+    // 各役職の解錠目標値 (固定) の表示
     const hintList = document.getElementById('hint-list');
-    hintList.innerHTML = '';
-    if (!player.hints || player.hints.length === 0) {
-      hintList.innerHTML = '<span class="hint-empty">探索でヒントを見つけましょう...</span>';
-    } else {
-      player.hints.forEach(hint => {
-        const hintDiv = document.createElement('div');
-        hintDiv.className = 'hint-item';
-        hintDiv.textContent = hint.text;
-        hintList.appendChild(hintDiv);
-      });
-    }
+    hintList.innerHTML = `
+      <div style="font-size: 0.8rem; font-family: var(--font-mono); line-height: 1.5; color: var(--text-main);">
+        ・冒険家: <strong class="text-cyan" style="text-shadow: var(--glow-cyan);">13</strong> (必要金糸: 5本)<br>
+        ・エンジニア: <strong class="text-cyan" style="text-shadow: var(--glow-cyan);">13</strong> (必要金糸: 5本)<br>
+        ・トレジャーハンター: <strong class="text-cyan" style="text-shadow: var(--glow-cyan);">15</strong> (必要金糸: 7本)<br>
+        ・石油王: <strong class="text-cyan" style="text-shadow: var(--glow-cyan);">19</strong> (必要金糸: 9本)<br>
+        ・魔女: <strong class="text-cyan" style="text-shadow: var(--glow-cyan);">19</strong> (必要金糸: 7本)
+      </div>
+    `;
 
     // 3. テキストログの更新
     const logWindow = document.getElementById('log-window');
@@ -1161,16 +1131,16 @@ function updateTreasuryDisplay() {
 
   const weights = ['8', '4', '2', '1'];
   weights.forEach(w => {
-    const active = treasurySlots[w] === 1;
+    const activeCount = treasurySlots[w] || 0;
     const lockSlot = document.querySelector(`.lock-slot[data-weight="${w}"]`);
     const valSpan = lockSlot.querySelector('.slot-val');
     
-    valSpan.textContent = active ? '1' : '0';
-    if (active) {
+    valSpan.textContent = activeCount;
+    if (activeCount > 0) {
       lockSlot.style.borderColor = 'var(--color-gold)';
       lockSlot.style.boxShadow = 'var(--glow-gold)';
-      currentInputSum += parseInt(w);
-      activeSlotsCount++;
+      currentInputSum += parseInt(w) * activeCount;
+      activeSlotsCount += activeCount;
     } else {
       lockSlot.style.borderColor = 'rgba(255,183,0,0.2)';
       lockSlot.style.boxShadow = 'none';
@@ -1179,7 +1149,7 @@ function updateTreasuryDisplay() {
 
   let displayCost = activeSlotsCount;
   if (player && player.role === 'tycoon') {
-    displayCost = 6;
+    displayCost = 9;
   }
 
   document.getElementById('slots-sum-display').textContent = currentInputSum;

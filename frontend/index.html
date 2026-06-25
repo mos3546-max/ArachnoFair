@@ -28,6 +28,7 @@
             <span class="role-badge speed">移動: 高</span>
           </div>
           <p class="role-desc">探索特化。移動時の選択肢が常に1つ多く、アイテム発見率が非常に高い。</p>
+          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50のランダム (必要金糸: 5本)</div>
         </div>
         
         <div class="role-card" data-role="engineer">
@@ -36,6 +37,7 @@
             <span class="role-badge item">アイテム: 高</span>
           </div>
           <p class="role-desc">アイテム使用回数+1。罠マスのダメージおよび移動制限ペナルティを無効化する。</p>
+          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50のランダム (必要金糸: 5本)</div>
         </div>
 
         <div class="role-card" data-role="treasure_hunter">
@@ -44,6 +46,7 @@
             <span class="role-badge combat">戦闘: 極高</span>
           </div>
           <p class="role-desc">セットコレクションの補正倍率強化。戦闘時、初期値補正と戦闘勝利確率が極めて高い。</p>
+          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50のランダム (必要金糸: 7本)</div>
         </div>
 
         <div class="role-card" data-role="tycoon">
@@ -51,7 +54,8 @@
             <h3>石油王</h3>
             <span class="role-badge gold">資金: 高</span>
           </div>
-          <p class="role-desc">強奪。他プレイヤーと同じマスに停止した際、金糸やHPを自動強奪する。※宝物庫の進入・解錠の際、目標値に関わらず常に蜘蛛の金糸が6本必要。</p>
+          <p class="role-desc">強奪。他プレイヤーと同じマスに停止した際、金糸やHPを自動強奪する。</p>
+          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50のランダム (必要金糸: 常に9本)</div>
         </div>
 
         <div class="role-card" data-role="witch">
@@ -59,7 +63,8 @@
             <h3>魔女</h3>
             <span class="role-badge curse">呪い: 高</span>
           </div>
-          <p class="role-desc">呪術特化。同じマスに停止した相手の移動力を1に固定し、バースト上限を一時的に低下させる。</p>
+          <p class="role-desc">呪術特化。同じマスに停止した相手の移動力を1に固定し、バースト上限を拡張する。</p>
+          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50のランダム (必要金糸: 7本)</div>
         </div>
       </div>
 
@@ -100,21 +105,18 @@
         <p style="margin: 0 0 12px 0; color: #fff;"><strong style="color: var(--color-gold);">1. 勝利条件 (中央の宝物庫解錠):</strong><br>
         マップ中央の「宝物庫 (マス 0)」に到達し、自身の「解錠目標値 N」と一致するようにスロット (8・4・2・1) に蜘蛛の金糸を投入して解錠します。</p>
         
-        <p style="margin: 0 0 12px 0; color: #fff;"><strong style="color: var(--color-gold);">2. 解錠目標値 N の特定:</strong><br>
-        目標値 $N$ はプレイヤーごとに異なり、以下で計算されます：<br>
-        <span class="text-cyan" style="font-weight: bold; font-size: 0.85rem; text-shadow: var(--glow-cyan);">$N = B (\text{基礎値}) + \text{役職補正} + \text{アイテム補正}$</span> (1〜15の範囲にクランプ)<br>
-        ・<b>基礎値 B (秘密の値)</b>: 1〜15。道中のイベントマスで「ON/OFF状態のヒント」を得て割り出します。<br>
-        ・<b>役職補正</b>: 石油王・魔女は $+3$、トレジャーハンターは $+2$ されます (冒険家・エンジニアは $+0$)。<br>
-        ・<b>代表的な目標値 (基礎値 B が 12 の場合)</b>:<br>
-        　- <b>冒険家</b>: <span class="text-cyan">12</span>、<b>エンジニア</b>: <span class="text-cyan">12</span><br>
-        　- <b>石油王</b>: <span class="text-cyan">15</span> (※金糸必要数は常に 6本)、<b>魔女</b>: <span class="text-cyan">15</span> (※魔女の補正+3による結果)<br>
-        　- <b>トレジャーハンター</b>: <span class="text-cyan">14</span> (※補正+2)<br>
-        ・<b>必要金糸数</b>: 通常は目標値のONビット数分（例：目標値12ならば 1100_2 で2本）が必要ですが、<b>石油王のみ目標値に関わらず常に6本</b>必要です。<br>
-        ・<b>アイテム補正 (セット効果)</b>: 指輪・アミュレット・王冠 of3種を揃えると $-2$（トレハンは $-3$）されます。</p>
+        <p style="margin: 0 0 12px 0; color: #fff;"><strong style="color: var(--color-gold);">2. 各役職の固定目標値:</strong><br>
+        目標値は役職ごとに完全に固定されており、以下のようになります：<br>
+        ・<b>冒険家</b>: 目標値 <span class="text-cyan">13</span> (必要金糸: 5本 / 8・4・1のスロット等に投入)<br>
+        ・<b>エンジニア</b>: 目標値 <span class="text-cyan">13</span> (必要金糸: 5本 / 8・4・1のスロット等に投入)<br>
+        ・<b>トレジャーハンター</b>: 目標値 <span class="text-cyan">15</span> (必要金糸: 7本 / 8・4・2・1のスロット等に投入)<br>
+        ・<b>石油王</b>: 目標値 <span class="text-cyan">19</span> (※必要金糸数は<b>常に9本</b> / スロットに任意の個数を投入)<br>
+        ・<b>魔女</b>: 目標値 <span class="text-cyan">19</span> (必要金糸: 7本 / 8x2・2・1のスロット等に投入)<br>
+        ・<b>スロットの複数投入</b>: 現在は1つのスロット（8, 4, 2, 1の重み）に金糸を<b>2個以上</b>（複数個）投入して合計値を調整できます。</p>
 
         <p style="margin: 0 0 12px 0; color: #fff;"><strong style="color: var(--color-gold);">3. 探索マスの効果:</strong><br>
         - 🎁 <b>アイテムマス (黄色)</b>: 装備品 (指輪・アミュレット・王冠) の獲得チャンス。<br>
-        - 🔍 <b>イベントマス (シアン)</b>: 蜘蛛の金糸 (出現率高) または解錠ヒントを獲得。<br>
+        - 🔍 <b>イベントマス (シアン)</b>: 蜘蛛の金糸 (出現率高) を獲得。<br>
         - ⚠️ <b>罠マス (ピンク)</b>: 500 HPダメージ & 次ターン移動力半減 (エンジニアは無効化)。<br>
         - 🌀 <b>移動補正マス (緑)</b>: 50%で蜘蛛の巣 (移動-2) または強風 (内周へ強制移動)。</p>
 
@@ -128,9 +130,9 @@
         <p style="margin: 0 0 12px 0; color: #fff;"><strong style="color: var(--color-gold);">6. 役職 (ロール) 固有の力:</strong><br>
         ・<b>冒険家</b>: 隣接マスの追加選択肢、アイテム/イベント発見率が非常に高い。<br>
         ・<b>エンジニア</b>: 罠ダメージ無効、アイテム獲得時に追加でもう1つ獲得。<br>
-        ・<b>トレジャーハンター</b>: セット効果補正が $-3$ 強化、戦闘勝利時にカード追加補充。<br>
-        ・<b>石油王</b>: 同一マス停止で相手から金糸1本(またはHP 300)を自動強奪 (目標値 $+3$ デバフあり)。※宝物庫の進入・解錠の際、目標値に関わらず常に蜘蛛の金糸が6本必要となります。バースト上限は 1800 に制限されます。<br>
-        ・<b>魔女</b>: 同一マス停止で相手に呪い(次ターン移動力1固定)を付与 (目標値 $+3$ デバフあり)。バースト上限が 2500 に拡張されますが、カード取得率が低下します。</p>
+        ・<b>トレジャーハンター</b>: 戦闘勝利時に戦闘カードを追加補充。<br>
+        ・<b>石油王</b>: 同一マス停止で相手から金糸1本(またはHP 300)を自動強奪する。※宝物庫の進入・解錠の際、目標値に関わらず常に蜘蛛の金糸が9本必要。バースト上限は 1800 に制限されます。<br>
+        ・<b>魔女</b>: 同一マス停止で相手に呪い(次ターン移動力1固定)を付与する。バースト上限が 2500 に拡張されますが、カード取得率が低下します。</p>
       </div>
       
       <!-- 最下部固定の「ゲームに行く」ボタンエリア -->
