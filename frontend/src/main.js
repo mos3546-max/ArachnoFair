@@ -26,8 +26,10 @@ let selectedRole = 'adventurer';
 // マスの物理座標マッピング (SVG中心を 0, 0 としたときの座標)
 const nodePositions = {};
 
-// ズーム値
+// ズーム値と移動オフセット
 let zoomLevel = 1.0;
+let panX = 0;
+let panY = 0;
 
 // 同心円の各リング半径 (34ノード4層構成)
 const R_INNER = 55;        // リング 1 (31-33)
@@ -50,12 +52,120 @@ function updateMapViewBox() {
   const baseHeight = 500;
   const w = baseWidth / zoomLevel;
   const h = baseHeight / zoomLevel;
-  const x = -w / 2;
-  const y = -h / 2;
+  const x = -w / 2 + panX;
+  const y = -h / 2 + panY;
   const svg = document.getElementById('spider-map');
   if (svg) {
     svg.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
   }
+}
+
+/**
+ * マップのドラッグ移動・ピンチズーム・マウス操作を設定する
+ */
+function setupMapTouchEvents() {
+  const svg = document.getElementById('spider-map');
+  if (!svg) return;
+
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  let startPanX = 0;
+  let startPanY = 0;
+
+  // ピンチズーム用の状態
+  let startDistance = 0;
+  let startZoom = 1.0;
+  let isPinching = false;
+
+  // 2点間の距離を計算するヘルパー
+  const getDistance = (t1, t2) => {
+    const dx = t1.clientX - t2.clientX;
+    const dy = t1.clientY - t2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  // タッチ操作（モバイル）
+  svg.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      isDragging = true;
+      isPinching = false;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      startPanX = panX;
+      startPanY = panY;
+    } else if (e.touches.length === 2) {
+      isDragging = false;
+      isPinching = true;
+      startDistance = getDistance(e.touches[0], e.touches[1]);
+      startZoom = zoomLevel;
+    }
+  }, { passive: true });
+
+  svg.addEventListener('touchmove', (e) => {
+    if (isDragging && e.touches.length === 1) {
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      const rect = svg.getBoundingClientRect();
+      const scaleX = 500 / rect.width / zoomLevel;
+      const scaleY = 500 / rect.height / zoomLevel;
+
+      panX = startPanX - dx * scaleX;
+      panY = startPanY - dy * scaleY;
+      updateMapViewBox();
+    } else if (isPinching && e.touches.length === 2) {
+      const distance = getDistance(e.touches[0], e.touches[1]);
+      if (startDistance > 0) {
+        const ratio = distance / startDistance;
+        zoomLevel = Math.max(0.5, Math.min(3.0, startZoom * ratio));
+        updateMapViewBox();
+      }
+    }
+  }, { passive: true });
+
+  svg.addEventListener('touchend', () => {
+    isDragging = false;
+    isPinching = false;
+  }, { passive: true });
+
+  // マウス操作（PC）
+  svg.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return; // 左クリックのみ
+    isDragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    startPanX = panX;
+    startPanY = panY;
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    const rect = svg.getBoundingClientRect();
+    const scaleX = 500 / rect.width / zoomLevel;
+    const scaleY = 500 / rect.height / zoomLevel;
+
+    panX = startPanX - dx * scaleX;
+    panY = startPanY - dy * scaleY;
+    updateMapViewBox();
+  });
+
+  window.addEventListener('mouseup', () => {
+    isDragging = false;
+  });
+
+  // マウスホイールでのズーム
+  svg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const zoomFactor = 1.1;
+    if (e.deltaY < 0) {
+      zoomLevel = Math.min(3.0, zoomLevel * zoomFactor);
+    } else {
+      zoomLevel = Math.max(0.5, zoomLevel / zoomFactor);
+    }
+    updateMapViewBox();
+  }, { passive: false });
 }
 
 /**
@@ -111,6 +221,7 @@ function calculateNodePositions() {
  */
 document.addEventListener('DOMContentLoaded', () => {
   calculateNodePositions();
+  setupMapTouchEvents();
   setupSocket();
   setupEventListeners();
 });
@@ -549,6 +660,23 @@ function setupEventListeners() {
       }
     });
   });
+
+  // ログパネルの開閉（モバイル用）
+  const logPanelHeader = document.getElementById('log-panel-header');
+  if (logPanelHeader) {
+    logPanelHeader.addEventListener('click', () => {
+      if (window.innerWidth <= 767) {
+        const logPanel = document.querySelector('.log-panel');
+        if (logPanel) {
+          logPanel.classList.toggle('expanded');
+          const toggleIcon = document.getElementById('log-toggle-icon');
+          if (toggleIcon) {
+            toggleIcon.textContent = logPanel.classList.contains('expanded') ? '▼' : '▲';
+          }
+        }
+      }
+    });
+  }
 }
 
 /**
