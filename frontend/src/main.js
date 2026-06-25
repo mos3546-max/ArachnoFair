@@ -695,15 +695,33 @@ function updateUI() {
       itemList.innerHTML = '<span class="badge empty">なし</span>';
     }
 
-    // 各役職の解錠目標値 (固定) の表示
+    // 目標値と獲得したヒントの表示
     const hintList = document.getElementById('hint-list');
+    const targetN = player.target || 20;
+    
+    // アイテム（指輪、アミュレット、王冠）がすべて揃っているかチェック
+    const requiredItems = ['指輪', 'アミュレット', '王冠'];
+    const hasAllItems = requiredItems.every(item => (player.items || []).includes(item));
+    
+    const displayTarget = hasAllItems ? targetN : '???';
+    const targetGlow = hasAllItems ? 'var(--glow-cyan)' : 'rgba(255,255,255,0.1)';
+    
+    let hintsHtml = '';
+    if (player.hints && player.hints.length > 0) {
+      hintsHtml = player.hints.map(h => `<div class="text-green" style="margin-top: 4px; font-size: 0.75rem;">✔ ${h.text}</div>`).join('');
+    } else {
+      hintsHtml = '<div class="text-muted" style="margin-top: 4px; font-size: 0.75rem;">獲得したヒントはありません。</div>';
+    }
+
     hintList.innerHTML = `
       <div style="font-size: 0.8rem; font-family: var(--font-mono); line-height: 1.5; color: var(--text-main);">
-        ・冒険家: <strong class="text-cyan" style="text-shadow: var(--glow-cyan);">13</strong> (必要金糸: 5本)<br>
-        ・エンジニア: <strong class="text-cyan" style="text-shadow: var(--glow-cyan);">13</strong> (必要金糸: 5本)<br>
-        ・トレジャーハンター: <strong class="text-cyan" style="text-shadow: var(--glow-cyan);">15</strong> (必要金糸: 7本)<br>
-        ・石油王: <strong class="text-cyan" style="text-shadow: var(--glow-cyan);">19</strong> (必要金糸: 9本)<br>
-        ・魔女: <strong class="text-cyan" style="text-shadow: var(--glow-cyan);">19</strong> (必要金糸: 7本)
+        基本解錠目標値: <strong class="text-cyan" style="text-shadow: ${targetGlow}; font-size: 1rem;">${displayTarget}</strong>
+        ${!hasAllItems ? '<br><span style="font-size: 0.7rem; color: var(--color-gold); font-weight: bold;">(指輪・アミュレット・王冠をすべて集めると開示)</span>' : ''}<br>
+        <span style="font-size: 0.7rem; color: var(--text-muted);">※必要金糸数: 冒険家/エンジニアは最小解錠金糸数、ハンター/魔女は+2本、石油王は常に9本</span>
+        <div style="margin-top: 10px; border-top: 1px dashed rgba(0, 240, 255, 0.2); padding-top: 8px;">
+          <strong style="color: var(--color-gold);">【獲得したヒント】</strong>
+          ${hintsHtml}
+        </div>
       </div>
     `;
 
@@ -1025,6 +1043,18 @@ function setupCombatUI() {
   
   const player = state.players[meIdx];
   const opponent = state.players[opponentId];
+
+  // タイトル表示
+  const combatTitle = document.querySelector('#ctrl-combat h3');
+  if (combatTitle) {
+    if (cState.isTreasuryCombat) {
+      combatTitle.textContent = 'TREASURY BATTLE';
+      combatTitle.className = 'glow-text text-gold';
+    } else {
+      combatTitle.textContent = 'BATTLE IN PROGRESS';
+      combatTitle.className = 'glow-text text-danger';
+    }
+  }
 
   // 名前の設定
   document.getElementById('combat-cpu-name').textContent = opponent.name;

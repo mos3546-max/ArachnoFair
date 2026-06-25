@@ -250,7 +250,7 @@ function resolveNodeLanding(gameState, player, node) {
 
   if (node === 0) {
     // 宝物庫（中央）に到着
-    const reqThreads = game.getRequiredThreadsForPlayer(player);
+    const reqThreads = game.getRequiredThreadsForPlayer(player, gameState.baseTarget);
 
     if (player.threads < reqThreads) {
       // 蜘蛛の金糸が不足している場合、ランダムなマス（1〜33）に弾き飛ばされる
@@ -410,7 +410,7 @@ function executeAllPlayersMoveAndResolve(gameState, roomId) {
 /**
  * 戦闘を開始する
  */
-function startCombat(gameState, attackerId, defenderId, roomId) {
+function startCombat(gameState, attackerId, defenderId, roomId, isTreasuryCombat = false) {
   const attacker = gameState.players[attackerId];
   const defender = gameState.players[defenderId];
 
@@ -423,7 +423,8 @@ function startCombat(gameState, attackerId, defenderId, roomId) {
     attackerCardPlayed: null,
     defenderCardPlayed: null,
     plays: {},
-    round: 1
+    round: 1,
+    isTreasuryCombat: isTreasuryCombat
   };
 
   addLog(gameState, `【戦闘発生】マス ${attacker.pos} にて、${attacker.name} と ${defender.name} の戦闘が始まりました！`);
@@ -465,7 +466,7 @@ function checkTreasuryEntry(gameState, roomId) {
   const candidates = [];
   gameState.players.forEach(p => {
     if (p.pos === 0 && p.hp > 0) {
-      const reqThreads = game.getRequiredThreadsForPlayer(p);
+      const reqThreads = game.getRequiredThreadsForPlayer(p, gameState.baseTarget);
 
       if (p.threads >= reqThreads) {
         candidates.push(p.id);
@@ -474,6 +475,15 @@ function checkTreasuryEntry(gameState, roomId) {
   });
 
   if (candidates.length > 0) {
+    if (candidates.length > 1) {
+      // 宝物庫の到達が同じターンに複数人（解錠可能プレイヤー）だった場合、戦闘に入る
+      const p1Id = candidates[0];
+      const p2Id = candidates[1];
+      addLog(gameState, `【宝物庫争奪戦】複数のプレイヤーが同時に宝物庫に到達しました！解錠権をかけて戦闘を開始します。`);
+      startCombat(gameState, p1Id, p2Id, roomId, true); // isTreasuryCombat = true
+      return;
+    }
+
     gameState.phase = 'TREASURY';
     const firstId = candidates[0];
     gameState.turn = firstId;
@@ -651,6 +661,69 @@ function transferCombatReward(gameState, winner, loser) {
  */
 function resolvePlayerCombatResult(gameState, p1, p2, p1Sum, p2Sum, p1Burst, p2Burst) {
   addLog(gameState, `戦闘集計: ${p1.name} 合計値 [${p1Sum}] ${p1Burst ? '(臨界点突破)' : ''} vs ${p2.name} 合計値 [${p2Sum}] ${p2Burst ? '(臨界点突破)' : ''}`);
+
+  const isTreasuryCombat = gameState.combatState && gameState.combatState.isTreasuryCombat;
+
+  if (isTreasuryCombat) {
+    let winner = null;
+    let loser = null;
+    let isDraw = false;
+
+    if (p1Burst && p2Burst) {
+      isDraw = true;
+      p1.hp = Math.max(0, p1.hp - 500);
+      p2.hp = Math.max(0, p2.hp - 500);
+      addLog(gameState, `両者バーストにより自滅！ お互いに 500 HPのダメージを受けました。`);
+    } else if (p1Burst) {
+      winner = p2;
+      loser = p1;
+      p1.hp = Math.max(0, p1.hp - 500);
+      addLog(gameState, `${p1.name}がバースト自滅！`);
+    } else if (p2Burst) {
+      winner = p1;
+      loser = p2;
+      p2.hp = Math.max(0, p2.hp - 500);
+      addLog(gameState, `${p2.name}がバースト自滅！`);
+    } else {
+      if (p1Sum > p2Sum) {
+        winner = p1;
+        loser = p2;
+      } else if (p2Sum > p1Sum) {
+        winner = p2;
+        loser = p1;
+      } else {
+        isDraw = true;
+        addLog(gameState, `戦闘は引き分けとなりました。`);
+      }
+    }
+
+    if (isDraw) {
+      // 引き分けの場合、両プレイヤーとも解錠できずランダムなマップに転移させます
+      const p1RandomNode = Math.floor(Math.random() * 33) + 1;
+      const p2RandomNode = Math.floor(Math.random() * 33) + 1;
+      p1.pos = p1RandomNode;
+      p2.pos = p2RandomNode;
+      addLog(gameState, `引き分けのため、両プレイヤーとも宝物庫を解錠できず、${p1.name}はマス ${p1RandomNode}、${p2.name}はマス ${p2RandomNode} に転移させられました。`);
+    } else {
+      // 勝ったプレイヤーが宝物庫の解錠できるようにし、負けたプレイヤーはランダムなマップに転移させます
+      const loserRandomNode = Math.floor(Math.random() * 33) + 1;
+      loser.pos = loserRandomNode;
+      addLog(gameState, `戦闘勝利！ ${winner.name} が宝物庫の解錠権を獲得しました！ 敗れた ${loser.name} はマス ${loserRandomNode} に転移させられました。`);
+    }
+
+    // 敗者のスタート戻り判定 (HPが0になった場合)
+    [p1, p2].forEach(p => {
+      if (p.hp <= 0) {
+        p.hp = 3000;
+        p.pos = Math.floor(Math.random() * 12) + 1;
+        addLog(gameState, `${p.name}は力尽き、スタート地点に戻されました。`);
+      }
+    });
+
+    gameState.phase = 'RESOLVE';
+    gameState.combatState = null;
+    return;
+  }
 
   if (p1Burst && p2Burst) {
     p1.hp = Math.max(0, p1.hp - 500);

@@ -28,7 +28,7 @@
             <span class="role-badge speed">移動: 高</span>
           </div>
           <p class="role-desc">探索特化。移動時の選択肢が常に1つ多く、アイテム発見率が非常に高い。</p>
-          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50のランダム (必要金糸: 5本)</div>
+          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50 (アイテム全収集で開示)</div>
         </div>
         
         <div class="role-card" data-role="engineer">
@@ -37,7 +37,7 @@
             <span class="role-badge item">アイテム: 高</span>
           </div>
           <p class="role-desc">アイテム使用回数+1。罠マスのダメージおよび移動制限ペナルティを無効化する。</p>
-          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50のランダム (必要金糸: 5本)</div>
+          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50 (アイテム全収集で開示)</div>
         </div>
 
         <div class="role-card" data-role="treasure_hunter">
@@ -46,7 +46,7 @@
             <span class="role-badge combat">戦闘: 極高</span>
           </div>
           <p class="role-desc">セットコレクションの補正倍率強化。戦闘時、初期値補正と戦闘勝利確率が極めて高い。</p>
-          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50のランダム (必要金糸: 7本)</div>
+          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50 (アイテム全収集で開示)</div>
         </div>
 
         <div class="role-card" data-role="tycoon">
@@ -55,7 +55,7 @@
             <span class="role-badge gold">資金: 高</span>
           </div>
           <p class="role-desc">強奪。他プレイヤーと同じマスに停止した際、金糸やHPを自動強奪する。</p>
-          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50のランダム (必要金糸: 常に9本)</div>
+          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50 (アイテム全収集で開示 / 必要金糸は常に9本)</div>
         </div>
 
         <div class="role-card" data-role="witch">
@@ -64,7 +64,7 @@
             <span class="role-badge curse">呪い: 高</span>
           </div>
           <p class="role-desc">呪術特化。同じマスに停止した相手の移動力を1に固定し、バースト上限を拡張する。</p>
-          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50のランダム (必要金糸: 7本)</div>
+          <div class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px;">解錠目標値: 20〜50 (アイテム全収集で開示)</div>
         </div>
       </div>
 
@@ -103,16 +103,14 @@
         <h3 style="color: var(--color-cyan); margin-top: 0; margin-bottom: 8px; border-bottom: 1px solid rgba(0, 240, 255, 0.3); padding-bottom: 4px; font-size: 0.95rem; font-family: var(--font-display); text-shadow: var(--glow-cyan); letter-spacing: 1px;">[SECURITY_PROTOCOL_RULES - 作戦ルール説明]</h3>
         
         <p style="margin: 0 0 12px 0; color: #fff;"><strong style="color: var(--color-gold);">1. 勝利条件 (中央の宝物庫解錠):</strong><br>
-        マップ中央の「宝物庫 (マス 0)」に到達し、自身の「解錠目標値 N」と一致するようにスロット (8・4・2・1) に蜘蛛の金糸を投入して解錠します。</p>
+        マップ中央の「宝物庫 (マス 0)」に到達し、「基本解錠目標値」と一致するようにスロット (8・4・2・1) に蜘蛛の金糸を投入して解錠します。</p>
         
-        <p style="margin: 0 0 12px 0; color: #fff;"><strong style="color: var(--color-gold);">2. 各役職の固定目標値:</strong><br>
-        目標値は役職ごとに完全に固定されており、以下のようになります：<br>
-        ・<b>冒険家</b>: 目標値 <span class="text-cyan">13</span> (必要金糸: 5本 / 8・4・1のスロット等に投入)<br>
-        ・<b>エンジニア</b>: 目標値 <span class="text-cyan">13</span> (必要金糸: 5本 / 8・4・1のスロット等に投入)<br>
-        ・<b>トレジャーハンター</b>: 目標値 <span class="text-cyan">15</span> (必要金糸: 7本 / 8・4・2・1のスロット等に投入)<br>
-        ・<b>石油王</b>: 目標値 <span class="text-cyan">19</span> (※必要金糸数は<b>常に9本</b> / スロットに任意の個数を投入)<br>
-        ・<b>魔女</b>: 目標値 <span class="text-cyan">19</span> (必要金糸: 7本 / 8x2・2・1のスロット等に投入)<br>
-        ・<b>スロットの複数投入</b>: 現在は1つのスロット（8, 4, 2, 1の重み）に金糸を<b>2個以上</b>（複数個）投入して合計値を調整できます。</p>
+        <p style="margin: 0 0 12px 0; color: #fff;"><strong style="color: var(--color-gold);">2. 基本解錠目標値 (20〜50のランダム):</strong><br>
+        目標値はゲーム開始時に20〜50の範囲でランダムに決定され、全員共通となります。ただし、開始時は秘匿されており、<b>装備アイテム（指輪・アミュレット・王冠）をすべて獲得する</b>ことで目標値が開示されます：<br>
+        ・<b>冒険家 / エンジニア</b>: 必要金糸数 = 基本解錠目標値の最小解錠金糸数。<br>
+        ・<b>トレジャーハンター / 魔女</b>: 必要金糸数 = 基本解錠目標値の最小解錠金糸数 + 2本。<br>
+        ・<b>石油王</b>: 必要金糸数は<b>常に9本</b>。<br>
+        ・<b>スロットの複数投入</b>: 現在は1つのスロット（8, 4, 2, 1 of重み）に金糸を<b>2個以上</b>（複数個）投入して合計値を調整できます。</p>
 
         <p style="margin: 0 0 12px 0; color: #fff;"><strong style="color: var(--color-gold);">3. 探索マスの効果:</strong><br>
         - 🎁 <b>アイテムマス (黄色)</b>: 装備品 (指輪・アミュレット・王冠) の獲得チャンス。<br>

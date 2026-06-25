@@ -107,8 +107,8 @@ const ROLES = {
  * ゲームステートを初期化する
  */
 function createInitialState(playerRole = 'adventurer') {
-  // 1〜15の範囲でランダムなベースの目標値 B を決定 (2進法 8-4-2-1 に対応)
-  const baseTarget = Math.floor(Math.random() * 15) + 1;
+  // 20〜50の範囲でランダムなベースの目標値 B を決定 (2進法 8-4-2-1 に対応)
+  const baseTarget = Math.floor(Math.random() * (50 - 20 + 1)) + 20;
 
   const roleKeys = Object.keys(ROLES);
   // CPUプレイヤーの役職を重複なしで決定
@@ -146,7 +146,8 @@ function createInitialState(playerRole = 'adventurer') {
       missCount: 0, // 擬似乱数用のハズレ連続カウント
       mobilityDebuff: false, // 罠マスによる移動力半減
       stickyDebuff: false, // 蜘蛛の巣による移動デバフ
-      cursed: false // 魔女の呪い
+      cursed: false, // 魔女の呪い
+      target: baseTarget
     },
     {
       id: 1,
@@ -162,7 +163,8 @@ function createInitialState(playerRole = 'adventurer') {
       missCount: 0,
       mobilityDebuff: false,
       stickyDebuff: false,
-      cursed: false
+      cursed: false,
+      target: baseTarget
     },
     {
       id: 2,
@@ -178,7 +180,8 @@ function createInitialState(playerRole = 'adventurer') {
       missCount: 0,
       mobilityDebuff: false,
       stickyDebuff: false,
-      cursed: false
+      cursed: false,
+      target: baseTarget
     },
     {
       id: 3,
@@ -194,7 +197,8 @@ function createInitialState(playerRole = 'adventurer') {
       missCount: 0,
       mobilityDebuff: false,
       stickyDebuff: false,
-      cursed: false
+      cursed: false,
+      target: baseTarget
     },
     {
       id: 4,
@@ -210,7 +214,8 @@ function createInitialState(playerRole = 'adventurer') {
       missCount: 0,
       mobilityDebuff: false,
       stickyDebuff: false,
-      cursed: false
+      cursed: false,
+      target: baseTarget
     }
   ];
 
@@ -251,26 +256,37 @@ function shuffleArray(arr) {
 
 /**
  * プレイヤーの最終的な解錠目標値 N を算出する
- * N = B (ベース値) + 役職補正 + アイテム補正
+ * ロールごとの固定化を廃止し、プレイヤー個別の目標値を返す
  */
 function calculateTargetForPlayer(player, baseTarget) {
-  if (!player) return 13;
-  if (player.role === 'adventurer' || player.role === 'engineer') return 13;
-  if (player.role === 'treasure_hunter') return 15;
-  if (player.role === 'tycoon' || player.role === 'witch') return 19;
-  return 13;
+  if (!player) return baseTarget || 20;
+  return player.target || baseTarget || 20;
 }
 
 /**
  * プレイヤーが宝物庫に進入・解錠するために必要な最低金糸数を取得する
  */
-function getRequiredThreadsForPlayer(player) {
+function getRequiredThreadsForPlayer(player, baseTarget) {
   if (!player) return 5;
-  if (player.role === 'adventurer' || player.role === 'engineer') return 5;
-  if (player.role === 'treasure_hunter') return 7;
-  if (player.role === 'witch') return 7;
-  if (player.role === 'tycoon') return 9;
-  return 5;
+  if (player.role === 'tycoon') return 9; // 石油王は常に9本必要
+  
+  // 目標値から最小金糸数を計算
+  let activeBits = 0;
+  let tempN = player.target || baseTarget || 20;
+  const weights = [8, 4, 2, 1];
+  weights.forEach(w => {
+    const qty = Math.floor(tempN / w);
+    if (qty > 0) {
+      activeBits += qty;
+      tempN -= w * qty;
+    }
+  });
+
+  // 魔女とトレジャーハンターは必要金糸数を少し多めにする（元の仕様：ハンター/魔女は7本（+2））
+  if (player.role === 'treasure_hunter' || player.role === 'witch') {
+    return activeBits + 2;
+  }
+  return activeBits;
 }
 
 /**
@@ -307,33 +323,53 @@ function generateHint(baseTarget, player) {
 
     if (category === 'even-odd') {
       const isEven = (targetN % 2 === 0);
-      text = `補正後の目標値 N は「${isEven ? '偶数' : '奇数'}」である。`;
+      text = `解錠目標値 N は「${isEven ? '偶数' : '奇数'}」である。`;
     } 
     else if (category === 'range') {
-      const isUpper = (targetN >= 8);
-      text = `補正後の目標値 N は「${isUpper ? '8 以上' : '7 以下'}」である。`;
+      const isUpper = (targetN >= 35);
+      text = `解錠目標値 N は「${isUpper ? '35 以上' : '34 以下'}」である。`;
     } 
     else if (category === 'threshold') {
-      const threshold = Math.random() < 0.5 ? 5 : 10;
+      const threshold = Math.random() < 0.5 ? 25 : 45;
       const isGreater = (targetN > threshold);
-      text = `補正後の目標値 N は「${threshold} ${isGreater ? 'より大きい' : '以下'}」である。`;
+      text = `解錠目標値 N は「${threshold} ${isGreater ? 'より大きい' : '以下'}」である。`;
     } 
     else if (category === 'count') {
+      // 最小金糸数を計算
       let activeBits = 0;
-      if (targetN & 8) activeBits++;
-      if (targetN & 4) activeBits++;
-      if (targetN & 2) activeBits++;
-      if (targetN & 1) activeBits++;
-      text = `補正後の目標値 N の解錠に必要な金糸（ONにするスロット）は「合計 ${activeBits} 本」である。`;
+      let tempN = targetN;
+      const weights = [8, 4, 2, 1];
+      weights.forEach(w => {
+        const qty = Math.floor(tempN / w);
+        if (qty > 0) {
+          activeBits += qty;
+          tempN -= w * qty;
+        }
+      });
+      text = `解錠目標値 N の解錠に必要な金糸の最小投入数は「合計 ${activeBits} 本」である。`;
     }
 
     return { bit: null, category, text };
   } 
   else if (remainingBits.length > 0) {
-    // 従来のビットON/OFFヒントを生成
+    // スロットの割り当てに関するヒントを生成
     const chosenBit = remainingBits[Math.floor(Math.random() * remainingBits.length)];
-    const isOn = (baseTarget & chosenBit) !== 0;
-    const text = `基礎値 B の ${chosenBit}の位（重み ${chosenBit}）は「${isOn ? 'ON (1)' : 'OFF (0)'}」である。`;
+    
+    // chosenBitのスロットに投入すべき個数を計算
+    let qty = 0;
+    let tempN = targetN;
+    const weights = [8, 4, 2, 1];
+    weights.forEach(w => {
+      const q = Math.floor(tempN / w);
+      if (w === chosenBit) {
+        qty = q;
+      }
+      if (q > 0) {
+        tempN -= w * q;
+      }
+    });
+
+    const text = `目標値 N を解錠する際、重み ${chosenBit} のスロットに投入する金糸の数は「${qty} 本」である。`;
 
     return { bit: chosenBit, category: 'bit', text };
   }
