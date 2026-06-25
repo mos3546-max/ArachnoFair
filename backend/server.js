@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
+const path = require('path');
 const game = require('./gameLogic');
 
 const app = express();
@@ -1528,6 +1529,14 @@ io.on('connection', (socket) => {
 app.get('/api/state', (req, res) => {
   // 後方互換性のためにモックステートを返す
   res.json({ phase: 'LOBBY', message: 'Socket.io接続を使用してください' });
+});
+
+// フロントエンドの静的ファイルをサーブ
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+// SPA対応（どのルートへのアクセスでもフロントエンドの index.html を返す）
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
 server.listen(PORT, () => {
