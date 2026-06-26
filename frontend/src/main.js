@@ -677,6 +677,23 @@ function setupEventListeners() {
       }
     });
   }
+
+  // ステータスパネルの開閉（モバイル用）
+  const statusPanelHeader = document.getElementById('status-panel-header');
+  if (statusPanelHeader) {
+    statusPanelHeader.addEventListener('click', () => {
+      if (window.innerWidth <= 767) {
+        const statusPanel = document.querySelector('.status-panel');
+        if (statusPanel) {
+          statusPanel.classList.toggle('expanded');
+          const toggleIcon = document.getElementById('status-toggle-icon');
+          if (toggleIcon) {
+            toggleIcon.textContent = statusPanel.classList.contains('expanded') ? '▼' : '▲';
+          }
+        }
+      }
+    });
+  }
 }
 
 /**

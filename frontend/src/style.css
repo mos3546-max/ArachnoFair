@@ -448,6 +448,10 @@ body {
   flex: none;
 }
 
+.status-toggle-arrow {
+  display: none; /* デフォルト（PC環境など）ではトグル矢印を非表示 */
+}
+
 .status-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -1017,17 +1021,23 @@ body {
 }
 
 @media (max-width: 767px) {
-  /* 全体コンテナを画面サイズに固定 */
+  /* 全体コンテナを画面サイズに固定 & グリッド化 */
   .game-container {
+    display: grid;
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
     width: 100vw;
     height: 100vh;
-    padding: 8px;
-    gap: 8px;
+    padding: 6px;
     box-sizing: border-box;
+    overflow: hidden;
   }
 
   /* ヘッダーの横並びコンパクト化 */
   .game-header {
+    grid-column: span 2; /* 全幅 */
+    display: flex;
     flex-direction: row;
     gap: 4px;
     align-items: center;
@@ -1067,13 +1077,13 @@ body {
     border-color: rgba(255,255,255,0.15);
   }
 
-  /* メインレイアウトを縦並びにする。全体をスクロールさせず、はみ出さないように height 制御 */
+  /* メインレイアウト & ダッシュボードの中間ラッパーを display: contents で無効化 */
   .game-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    height: calc(100% - 48px); /* ヘッダーの高さを差し引く */
-    min-height: 0;
+    display: contents;
+  }
+
+  .dashboard-panel {
+    display: contents;
   }
 
   /* モバイル版では見出し（蜘蛛の巣トポロジー・グリッド）を非表示 */
@@ -1086,17 +1096,18 @@ body {
     display: none;
   }
 
-  /* マップを上部に固定（スクロールさせない） */
+  /* マップを上部に固定（全幅） */
   .map-panel {
+    grid-column: span 2;
     flex: none;
-    height: 250px; /* マップの固定高 */
-    padding: 8px;
+    height: 290px; /* 200px から 290px に拡大 */
+    padding: 4px;
     align-items: center;
     justify-content: center;
   }
 
   .map-container {
-    padding: 2px;
+    padding: 0;
     flex: 1;
     width: 100%;
     display: flex;
@@ -1105,138 +1116,377 @@ body {
   }
 
   #spider-map {
-    max-height: 190px;
-    max-width: 190px;
+    max-height: 235px; /* 155px から 235px に拡大 */
+    max-width: 235px;
     height: 100%;
     width: 100%;
   }
 
   .map-legend {
-    margin-top: 4px;
+    margin-top: 2px;
     gap: 6px;
-    font-size: 0.6rem;
-  }
-
-  /* ダッシュボード（ステータスやコンソール）部分だけをスクロール可能にする */
-  .dashboard-panel {
-    flex: 1;
-    min-height: 0; /* 縮むように */
-    overflow-y: auto; /* ここで縦スクロールを有効化 */
-    padding-right: 4px;
-    gap: 10px;
+    font-size: 0.55rem;
   }
 
   .flex-row {
     flex-direction: row;
-    gap: 8px;
+    gap: 6px;
   }
 
   .combat-sums {
-    gap: 6px;
-    padding: 6px;
+    gap: 4px;
+    padding: 4px;
   }
 
   .combat-sums .score {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
   }
 
   .versus {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
   }
 
-  /* ログウィンドウのプルダウン（アコーディオン）化 */
+  /* ログウィンドウのプルダウン（右列に配置し、ステータスパネルと横並びに） */
   .log-panel {
+    grid-column: 2;
+    grid-row: 4;
     flex: none;
-    height: 38px; /* 閉じた状態（ヘッダーのみ） */
+    height: 42px; /* 32px から 42px に拡大し、タップしやすく文字切れを防止 */
     min-height: 0;
     overflow: hidden;
     transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    align-self: start; /* コントロールのすぐ下に密着させる */
+    padding: 8px 10px !important;
   }
 
   .log-panel.expanded {
-    height: 150px; /* 開いた状態 */
+    height: 220px; /* status-panelのexpandedと高さを合わせる */
   }
 
   .log-panel .panel-header {
     cursor: pointer;
     user-select: none;
     padding-bottom: 4px;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    height: 26px;
+    display: flex;
+    align-items: center;
   }
 
   .log-toggle-arrow {
+    display: inline-block;
+    font-size: 0.7rem;
+    margin-left: 4px;
+    color: var(--color-cyan);
+    text-shadow: var(--glow-cyan);
+  }
+
+  /* 順序の入れ替え: オペレーションコントロールをマップのすぐ下に（全幅） */
+  .console-panel {
+    grid-column: span 2;
+    order: 1;
+    padding: 8px 12px !important;
+  }
+
+  /* 生体シグナルリソース（ステータス）のプルダウン（左列に配置し、ログパネルと横並びに） */
+  .status-panel {
+    grid-column: 1;
+    grid-row: 4;
+    order: 2;
+    padding: 8px 10px !important; /* ログパネルとパディングを合わせる */
+    flex: none;
+    height: 42px; /* 32px から 42px に拡大 */
+    min-height: 0;
+    overflow: hidden;
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    align-self: start; /* コントロールのすぐ下に密着させる */
+    display: flex;
+    flex-direction: column;
+  }
+
+  .status-panel.expanded {
+    height: 220px; /* 155px から 220px に拡大 */
+  }
+
+  .status-panel .panel-header {
+    cursor: pointer;
+    user-select: none;
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+  }
+
+  .status-toggle-arrow {
     display: inline-block;
     font-size: 0.75rem;
     margin-left: 4px;
     color: var(--color-cyan);
     text-shadow: var(--glow-cyan);
-    transition: transform 0.2s ease;
+  }
+
+  /* ログウィンドウ内のフォント調整と文字の下切れ防止 */
+  .log-window {
+    font-size: 0.72rem; /* 文字サイズを適度に調整 */
+    line-height: 1.5;
+    padding: 4px !important;
+    height: calc(100% - 32px); /* ヘッダーの高さを引いて残りを全幅でスクロールさせる */
+    overflow-y: auto;
+  }
+
+  .log-line {
+    padding: 3px 0 3px 6px !important; /* 上下にゆとりを持たせ、ディセンダ(文字の下側)切れを防止 */
+    line-height: 1.5;
+    margin-bottom: 2px;
+  }
+
+  /* 生体シグナル（ステータス）を展開時のみスクロール可能（縦並び）にする */
+  .status-panel.expanded .status-grid {
+    flex: 1;
+    overflow-y: auto; /* ログと同様に縦スクロールを有効化 */
+    padding-right: 4px;
+  }
+
+  .status-grid {
+    display: flex;
+    flex-direction: column; /* 1列の縦並びに復元 */
+    gap: 8px;
+    width: 100%;
+  }
+
+  .status-item {
+    padding: 6px 0 !important;
+    background: transparent;
+    border: none !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.05) !important; /* 各項目の区切り線 */
+    margin: 0 !important;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .status-item:first-child {
+    border-top: none !important; /* 最初のHP項目には上の区切り線をつけない */
+  }
+
+  /* 金糸と役職の横並びをモバイルでは縦並びに変更 */
+  .status-item:nth-child(2) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .status-item:nth-child(2) > div {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .status-item:nth-child(2) > div:last-child {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 8px;
+  }
+
+  /* 獲得アイテムの縦並び復元 */
+  .status-item:nth-child(3) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .status-item:nth-child(3) .label {
+    margin-bottom: 2px;
+    font-size: 0.6rem;
+  }
+
+  .hp-bar-container {
+    height: 12px;
+  }
+
+  .bar-text {
+    font-size: 0.6rem;
+  }
+
+  .thread-display-container {
+    padding: 0 6px;
+    border-width: 1px;
+  }
+
+  .glow-num {
+    font-size: 0.95rem;
+  }
+
+  #player-role-display {
+    font-size: 0.75rem;
+  }
+
+  #item-list {
+    gap: 2px;
+  }
+
+  .badge {
+    font-size: 0.55rem;
+    padding: 1px 3px;
+    border-radius: 2px;
+  }
+
+  .hint-item {
+    font-size: 0.7rem;
+    padding: 2px 4px;
+  }
+
+  #treasury-security-status {
+    font-size: 0.7rem !important;
+    padding: 2px 4px !important;
+    margin-top: 2px !important;
+  }
+
+  /* オペレーションコントロールの中身も削減 */
+  .console-content {
+    min-height: auto;
+    height: auto;
+  }
+
+  .ctrl-group {
+    gap: 6px;
+  }
+
+  .prompt-text {
+    font-size: 0.68rem; /* ダイスロール促しテキストなどをもう少し小さく */
+    margin-bottom: 0;
   }
 
   /* 役職選択（ホーム画面）のスマホ最適化 */
   .overlay-content {
-    padding: 20px 15px;
-    gap: 16px;
-    max-height: 95vh;
+    padding: 16px 12px;
+    gap: 10px; /* 16px から 10px に縮小 */
+    max-height: 96vh;
+    width: 96vw;
     overflow-y: auto;
   }
 
   .overlay-content h1 {
-    font-size: 2.0rem;
+    font-size: 1.8rem; /* タイトルロゴをさらにコンパクトに */
     margin-bottom: -5px;
+    letter-spacing: 1px;
   }
 
+  .overlay-content .subtitle {
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+  }
+
+  .overlay-content h2 {
+    font-size: 0.85rem; /* 説明文を小さく */
+    margin-top: 2px;
+  }
+
+  /* 役職選択グリッド */
   .role-grid {
     grid-template-columns: 1fr;
-    gap: 10px;
-    margin: 10px 0;
+    gap: 6px;
+    margin: 6px 0;
   }
 
   .role-card {
-    padding: 12px;
+    padding: 8px 10px;
+    gap: 4px;
+  }
+
+  .role-header h3 {
+    font-size: 0.9rem;
+  }
+
+  .role-badge {
+    font-size: 0.6rem;
+    padding: 1px 4px;
+  }
+
+  .role-desc {
+    font-size: 0.7rem;
+    line-height: 1.3;
+  }
+
+  /* インラインスタイルで指定された入力エリアの余白を強制上書き */
+  .name-input-container,
+  .room-input-container {
+    margin: 4px 0 !important;
+    gap: 4px !important;
+  }
+
+  .name-input-container label,
+  .room-input-container label {
+    font-size: 0.7rem !important;
+  }
+
+  .name-input-container input,
+  .room-input-container input {
+    padding: 8px !important;
+    font-size: 0.95rem !important;
+  }
+
+  /* ルール説明ボタン・プレイボタンコンテナの縦並び化 */
+  #role-select-overlay .overlay-content div[style*="display: flex"] {
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin-top: 4px !important;
+    width: 100% !important;
+    max-width: 320px !important;
+  }
+
+  #start-game-btn,
+  #match-online-btn,
+  #show-rules-btn {
+    width: 100% !important;
+    padding: 10px 14px !important;
+    font-size: 0.8rem !important;
   }
 
   /* --- タップターゲットとUI調整 --- */
 
   .cyber-btn {
-    padding: 12px 16px;
-    font-size: 0.8rem;
+    padding: 8px 12px; /* 10px 14px からさらに縮小 */
+    font-size: 0.7rem; /* 0.75rem から縮小 */
     width: 100%;
   }
 
   .cyber-btn-outline {
-    padding: 10px 14px;
-    font-size: 0.75rem;
-  }
-
-  .cyber-btn-outline.small {
     padding: 8px 12px;
     font-size: 0.7rem;
   }
 
+  .cyber-btn-outline.small {
+    padding: 6px 10px;
+    font-size: 0.65rem;
+  }
+
   .btn-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    gap: 6px;
   }
 
   .card-hand {
-    gap: 8px;
-    margin: 6px 0;
+    gap: 6px;
+    margin: 4px 0;
   }
 
   .cyber-card {
-    width: 50px;
-    height: 75px;
+    width: 44px;
+    height: 66px;
   }
 
   .cyber-card .value {
-    font-size: 1.0rem;
+    font-size: 0.9rem;
   }
 
   .treasury-locks {
     grid-template-columns: repeat(4, 1fr);
     gap: 4px;
-    margin: 8px 0;
+    margin: 6px 0;
   }
 
   .lock-slot {
@@ -1244,35 +1494,19 @@ body {
   }
 
   .lock-slot .weight {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
   }
 
   .slot-frame {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     padding: 1px 2px;
     margin: 2px 0;
   }
 
   .slot-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 1.0rem;
-  }
-
-  .status-grid {
-    gap: 8px;
-  }
-
-  .status-item {
-    padding: 8px;
-  }
-
-  .thread-display-container {
-    padding: 2px 10px;
-  }
-
-  .glow-num {
-    font-size: 1.2rem;
+    width: 24px;
+    height: 24px;
+    font-size: 0.9rem;
   }
 
   .rules-scroll-area {
