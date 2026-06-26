@@ -18,8 +18,8 @@
   <div id="role-select-overlay" class="overlay">
     <div class="overlay-content">
       <h1 class="glow-text">ARACHNOFAIR</h1>
-      <p class="subtitle">アラクノフェア - カード＆数理探索ゲーム</p>
-      <h2>探索を開始する前に、あなたの役職（ロール）を選択してください</h2>
+      <p class="subtitle">アラクノフェア</p>
+      <h2>探索を開始する前に、ロールを選択してください</h2>
       
       <div class="role-grid">
         <div class="role-card selected" data-role="adventurer">
@@ -224,8 +224,8 @@
         
         <!-- プレイヤーステータス -->
         <div class="panel status-panel">
-          <div class="panel-header">
-            <h2>生体シグナル & リソース</h2>
+          <div class="panel-header" id="status-panel-header">
+            <h2>HP & リソース <span id="status-toggle-icon" class="status-toggle-arrow">▲</span></h2>
           </div>
           <div class="status-grid">
             <div class="status-item">
@@ -394,8 +394,8 @@
 
     <!-- 下段: ターミナルログコンソール -->
     <footer class="panel log-panel">
-      <div class="panel-header">
-        <h2>ログ</h2>
+      <div class="panel-header" id="log-panel-header">
+        <h2>ログ <span id="log-toggle-icon" class="log-toggle-arrow">▲</span></h2>
         <span class="log-status">ONLINE</span>
       </div>
       <div id="log-window" class="log-window">
